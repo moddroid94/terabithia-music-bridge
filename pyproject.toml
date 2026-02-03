@@ -1,0 +1,15 @@
+[project]
+name = "terabithia"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "liblistenbrainz",
+    "music-tag>=0.4.3",
+    "musicbrainzngs>=0.7.1",
+    "pillow>=12.1.0",
+]
+
+[tool.uv.sources]
+liblistenbrainz = { git = "https://github.com/moddroid94/liblistenbrainz" }
