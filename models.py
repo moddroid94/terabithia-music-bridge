@@ -1,21 +1,21 @@
 class TrackItemSlot:
     def __init__(
         self,
-        id,
         title,
-        duration,
-        replayGain,
-        trackNumber,
-        volumeNumber,
-        popularity,
-        copyright,
-        url,
-        isrc,
-        explicit,
-        audioQuality,
         artist,
-        artists,
-        album,
+        album=None,
+        id=None,
+        duration=None,
+        replayGain=None,
+        trackNumber=None,
+        volumeNumber=None,
+        popularity=None,
+        copyright=None,
+        url=None,
+        isrc=None,
+        explicit=None,
+        audioQuality=None,
+        artists=None,
     ):
         self.id = id
         self.title = title
@@ -72,7 +72,15 @@ class AlbumItemSlot:
 
 class TrackInfoSlot:
     def __init__(
-        self, trackId, trackReplayGain, albumReplayGain, bitDepth, sampleRate, manifest
+        self,
+        trackId,
+        trackReplayGain,
+        albumReplayGain,
+        bitDepth,
+        sampleRate,
+        manifest,
+        url="",
+        codec="",
     ):
         self.trackId = trackId
         self.trackReplayGain = trackReplayGain
@@ -80,12 +88,8 @@ class TrackInfoSlot:
         self.bitDepth = bitDepth
         self.sampleRate = sampleRate
         self.manifest = manifest
-
-
-class TrackManifest:
-    def __init__(self, codec, url):
-        self.codecs = codec
         self.url = url
+        self.codecs = codec
 
 
 class ArtistSubSlot:
@@ -102,8 +106,9 @@ class AlbumSubSlot:
         self.cover = cover
 
 
-class TrackItem:
-    def __init__(self, album, creator, title):
-        self.album = album
-        self.creator = creator
+class CandidateTrack:
+    def __init__(self, title, artist, album=None, id=None):
         self.title = title
+        self.artist = artist
+        self.album = album
+        self.id = id

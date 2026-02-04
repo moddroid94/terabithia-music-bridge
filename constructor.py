@@ -4,8 +4,9 @@ from models import (
     AlbumSubSlot,
     TrackInfoSlot,
     TrackManifest,
-    TrackItem,
+    TrackCandidate,
     AlbumItemSlot,
+    CandidateTrack,
 )
 from utils import json_from_base64
 
@@ -80,9 +81,26 @@ def TrackManifestFromInfoManifest(ResponseManifest) -> TrackManifest:
     )
 
 
-def TrackItemFromJSPFTrack(responsePlaylist) -> TrackItem:
-    return TrackItem(
+def TrackCandidateFromJSPFTrack(responsePlaylist) -> TrackCandidate:
+    return TrackCandidate(
         album=responsePlaylist["album"],
-        creator=responsePlaylist["creator"],
+        artist=responsePlaylist["creator"],
         title=responsePlaylist["title"],
+    )
+
+
+def CandidateTrackFromMetadataAPI(metadataResponse, ApiProvider):
+    match ApiProvider:
+        case "hifi":
+            pass
+        case "lbz":
+            pass
+        case _:
+            raise NotImplementedError
+
+    return CandidateTrack(
+        metadataResponse["title"],
+        metadataResponse["creator"],
+        metadataResponse["album"],
+        metadataResponse["id"],
     )

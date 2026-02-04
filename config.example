@@ -1,0 +1,16 @@
+[
+    {
+        "name": "Release Radar",
+        "provider": "lbz",
+        "prompt": "recs:x4b1d::unlistened",
+        "mode": "easy",
+        "token": ""
+    },
+    {
+        "name": "DnB Dungeons",
+        "provider": "lbz",
+        "prompt": "artist:(Noisia) tag:(drum n bass)",
+        "mode": "medium",
+        "token": ""
+    }
+]

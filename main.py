@@ -3,98 +3,78 @@ import base64
 import json
 from os import path, makedirs
 
-from lb_handler import ListenBrainzAPI
-from squid_api import SquidAPI
-from constructor import (
-    TrackSlotFromResponseItem,
-    AlbumSlotFromResponseData,
-    TrackInfoSlotFromResponseData,
-    TrackManifestFromInfoManifest,
-    TrackItemFromJSPFTrack,
-)
-from models import TrackItem, TrackItemSlot
+
+from models import TrackItemSlot
 import tagger
+from linkapi import MetaLinkApi, AudioLinkApi
+from utils import match_candidate_to_track
 
 
 def main():
-    auth_token = ""
+    with open("config.json", "rb") as conf:
+        config = json.loads(conf.read())
 
-    api = ListenBrainzAPI("x4b1d", auth_token)
-    sqd = SquidAPI()
+    for playlist in config:
+        fetch(playlist)
 
-    # get playlist from listenbrainz
-    response = api.get_radio_json("recs:x4b1d::unlistened")
 
-    # get basic info for every track in the playlist
-    tracklist: list[TrackItem] = []
-    for i in response["payload"]["jspf"]["playlist"]["track"]:
-        trackItem = TrackItemFromJSPFTrack(i)
-        print(f"Appending Item: Title: {trackItem.title} - Artist: {trackItem.creator}")
-        tracklist.append(trackItem)
+def fetch(playlist):
+    print(f"Building playlist: {playlist['name']}")
+    try:
+        metaApi = MetaLinkApi(playlist["provider"], playlist["token"])
+    except KeyError:
+        metaApi = MetaLinkApi(playlist["provider"])
+    audioApi = AudioLinkApi("hifi")
 
-    # get full metadata from api for every track and adds to queue if matching
-    queue_list: list[TrackItemSlot] = []
-    for i in tracklist:
-        response = sqd.search_track(f"{i.title} {i.creator}")
+    trackList: list[TrackItemSlot] = []
+    # get candidate tracks from api
+    # API returns a list of CandidateTracks from a playlist config entry
+    candidateList = metaApi.api.get_candidates(playlist)
 
-        trackSlot = TrackSlotFromResponseItem(response["data"]["items"][0])
-        print(
-            f"Checking Item: Title: {i.title} Artist: {i.creator}\nWith: Title: {trackSlot.title} Artist: {trackSlot.artist.name} Feat: {[t.name for t in trackSlot.artists]}\n"
-        )
-        # append only if name + artist is in the track infos
-        # clean up titles to avoid punctuation differences between tidal and musicbrainz suggestions
-        trackTitle = "".join(x for x in i.title if (x.isalnum() or x in "._- "))
-        compareTitle = "".join(
-            x for x in trackSlot.title if (x.isalnum() or x in "._- ")
-        )
-        if (
-            (
-                compareTitle.casefold() in trackTitle.casefold()
-                or trackTitle.casefold() in compareTitle.casefold()
-            )
-            and (
-                trackSlot.artist.name.casefold() in i.creator.casefold()
-                or i.creator.casefold() in trackSlot.artist.name.casefold()
-            )
-        ) or (
-            (
-                compareTitle.casefold() in trackTitle.casefold()
-                or trackTitle.casefold() in compareTitle.casefold()
-            )
-            and i.creator.casefold() in [t.name.casefold() for t in trackSlot.artists]
-        ):
+    # matches candidates to available tracks
+    # gets full metadata from api for every track and adds to queue
+
+    for i in candidateList:
+        # API returns a list of TrackItemSlot from a prompt
+        trackSlotList = audioApi.api.search_track(f"{i.title} {i.artist}")
+
+        for trackSlot in trackSlotList:
+            # append only if name + artist is in the track infos
             print(
-                f"FOUND Item: Title: {trackSlot.title} Artist: {trackSlot.artist.name} Feat: {[t.name for t in trackSlot.artists]}\n"
+                f"Checking Item: Title: {i.title} Artist: {i.artist}\nWith: Title: {trackSlot.title} Artist: {trackSlot.artist.name} Feat: {[t.name for t in trackSlot.artists]}\n"
             )
-            albumResponse = sqd.get_album_info(trackSlot.album.id)
-            trackSlot.album = AlbumSlotFromResponseData(albumResponse["data"])
-            queue_list.append(trackSlot)
+            if match_candidate_to_track(i, trackSlot):
+                # get additional album info if matching
+                trackSlot.album = audioApi.api.get_album_info(trackSlot.album.id)
+                trackList.append(trackSlot)
+                print(f"Matched: {trackSlot.title} - {trackSlot.artist.name}\n")
+                break  # breaks after the first match
+
         time.sleep(4)
-        if len(queue_list) > 1:
+        if len(trackList) > 10:
             break
 
     # get track files from queue list and
     # builds playlist appending tracks to the m3u
     m3u = []
     m3u.append("#EXTM3U")
-    m3u.append("#PLAYLISTX")
-    for t in queue_list:
-        response = sqd.get_track_info(t.id, t.audioQuality)
-
-        # get track mpd and manifest
-        trackInfoSlot = TrackInfoSlotFromResponseData(response["data"])
-        trackManifest = TrackManifestFromInfoManifest(trackInfoSlot.manifest)
-
-        print(f"Downloading Item: Title: {t.title} - Artist: {t.artist.name}")
+    m3u.append(f"#{playlist['name']}")
+    for t in trackList:
+        # get file manifest and info
+        trackInfoSlot = audioApi.api.get_track_manifest(t.id, t.audioQuality)
 
         # get artwork and audio file
+        print(f"Downloading Item: Title: {t.title} - Artist: {t.artist.name}")
         time.sleep(1.5)
-        trackBytes = sqd.get_track_file(trackManifest.url)
-        trackArtworkBytes = sqd.get_album_art_from_uuid(t.album.cover)
+        trackBytes = audioApi.api.get_track_file(trackInfoSlot.url)
+        trackArtworkBytes = audioApi.api.get_album_art(t.album.cover)
 
+        albumTitle = "".join(x for x in t.album.title if (x.isalnum() or x in "._- "))
         # make dirs recursively
         try:
-            dirPath = path.abspath(f"tracks/playlistx/{t.artist.name}/{t.album.title}")
+            dirPath = path.abspath(
+                f"tracks/{playlist['name']}/{t.artist.name}/{albumTitle}"
+            )
             makedirs(dirPath, exist_ok=True)
         except Exception as e:
             print(
@@ -103,11 +83,12 @@ def main():
 
         # sanitize file name and builds filename
         fileTitle = "".join(x for x in t.title if (x.isalnum() or x in "._- "))
+
         filePath = path.abspath(
-            f"tracks/playlistx/{t.artist.name}/{t.album.title}/{fileTitle} - {t.artist.name}.{trackManifest.codecs}"
+            f"tracks/{playlist['name']}/{t.artist.name}/{albumTitle}/{fileTitle} - {t.artist.name}.{trackInfoSlot.codecs}"
         )
 
-        # write files to disk and append to m3u
+        # write files to disk and append relative path to m3u
         time.sleep(4)
         try:
             with open(
@@ -116,26 +97,28 @@ def main():
             ) as file:
                 file.write(trackBytes)
             m3u.append(
-                f"{t.artist.name}/{t.album.title}/{fileTitle} - {t.artist.name}.{trackManifest.codecs}"
+                f"{t.artist.name}/{albumTitle}/{fileTitle} - {t.artist.name}.{trackInfoSlot.codecs}"
             )
         except Exception as e:
             print(
-                f"ERROR: Can't write: {fileTitle} - {t.artist.name}.{trackManifest.codecs} \nError: {e.with_traceback()}"
+                f"ERROR: Can't write: {fileTitle} - {t.artist.name}.{trackInfoSlot.codecs} \nError: {e.with_traceback()}"
             )
 
         # tag succesfully written files
         time.sleep(1)
         tagger.tag_flac(filePath, t)
         tagger.add_cover(filePath, trackArtworkBytes)
+        print(f"Cover Added to Track: {t.title} - {t.artist.name}")
 
     # write m3u8 playlist file to disk
     with open(
-        "tracks/playlistx/playlistx.m3u8",
+        f"tracks/{playlist['name']}/{playlist['name']}.m3u8",
         encoding="utf-8",
         mode="w",
     ) as file:
         for line in m3u:
             file.write(line + "\n")
+    print("Playlist downloaded")
 
 
 def get_search_result():
