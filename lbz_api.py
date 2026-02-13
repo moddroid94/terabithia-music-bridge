@@ -25,7 +25,6 @@ class ListenBrainzAPI:
             candidateTrack = CandidateTrack(
                 title=i["title"],
                 artist=i["creator"],
-                album=i["album"],
                 id=None,
             )
             print(
