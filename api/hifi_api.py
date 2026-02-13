@@ -1,8 +1,8 @@
 from urllib.parse import urljoin
 import requests
 
-from utils import json_from_base64
-from models import (
+from utils.utils import json_from_base64
+from models.models import (
     TrackItemSlot,
     ArtistSubSlot,
     AlbumSubSlot,

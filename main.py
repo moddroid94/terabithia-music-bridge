@@ -1,30 +1,48 @@
 import time
-import base64
 import json
-from os import path, makedirs
+from os import path, makedirs, walk
+import logging
+
+from models.models import TrackItemSlot
+from core import tagger
+from api.linkapi import MetaLinkApi, AudioLinkApi
+from utils.utils import match_candidate_to_track
 
 
-from models import TrackItemSlot
-import tagger
-from linkapi import MetaLinkApi, AudioLinkApi
-from utils import match_candidate_to_track
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    filename=f"logs/run{time.time()}.log", encoding="utf-8", level=logging.DEBUG
+)
+
+logger.info("Logging Initialized")
 
 
 def main():
     with open("config.json", "rb") as conf:
         config = json.loads(conf.read())
+    logger.info("Configuration loaded")
 
-    for playlist in config:
-        fetch(playlist)
+    blueprints = []
+    for dirpath, dirnames, filenames in walk(path.abspath("blueprints")):
+        logger.info("Scanning %s", dirpath)
+        for file in filenames:
+            blueprints.append(path.join(dirpath, file))
+            logger.info("Found Blueprint %s", file)
+        break
+
+    for playlist in blueprints:
+        with open(playlist, "rb") as item:
+            playlistEntry = json.loads(item.read())
+        fetch(playlistEntry, config)
 
 
-def fetch(playlist):
-    print(f"Building playlist: {playlist['name']}")
+def fetch(playlist, config):
+    logger.info("Building playlist: %s", playlist["name"])
     try:
-        metaApi = MetaLinkApi(playlist["provider"], playlist["token"])
+        metaApi = MetaLinkApi(playlist["metaApi"], config["token"])
     except KeyError:
-        metaApi = MetaLinkApi(playlist["provider"])
-    audioApi = AudioLinkApi("hifi")
+        metaApi = MetaLinkApi(playlist["metaApi"])
+    audioApi = AudioLinkApi(playlist["audioApi"])
 
     trackList: list[TrackItemSlot] = []
     # get candidate tracks from api
@@ -40,14 +58,21 @@ def fetch(playlist):
 
         for trackSlot in trackSlotList:
             # append only if name + artist is in the track infos
-            print(
-                f"Checking Item: Title: {i.title} Artist: {i.artist}\nWith: Title: {trackSlot.title} Artist: {trackSlot.artist.name} Feat: {[t.name for t in trackSlot.artists]}\n"
+            logger.info(
+                "Checking Item: Title: %s Artist: %s\nWith: Title: %s Artist: %s Feat: %s\n",
+                i.title,
+                i.artist,
+                trackSlot.title,
+                trackSlot.artist.name,
+                [t.name for t in trackSlot.artists],
             )
             if match_candidate_to_track(i, trackSlot):
                 # get additional album info if matching
                 trackSlot.album = audioApi.api.get_album_info(trackSlot.album.id)
                 trackList.append(trackSlot)
-                print(f"Matched: {trackSlot.title} - {trackSlot.artist.name}\n")
+                logger.info(
+                    "Matched: %s - %s\n", trackSlot.title, trackSlot.artist.name
+                )
                 break  # breaks after the first match
 
         time.sleep(4)
@@ -64,7 +89,7 @@ def fetch(playlist):
         trackInfoSlot = audioApi.api.get_track_manifest(t.id, t.audioQuality)
 
         # get artwork and audio file
-        print(f"Downloading Item: Title: {t.title} - Artist: {t.artist.name}")
+        logger.info("Downloading Item: Title: %s - Artist: %s", t.title, t.artist.name)
         time.sleep(1.5)
         trackBytes = audioApi.api.get_track_file(trackInfoSlot.url)
         trackArtworkBytes = audioApi.api.get_album_art(t.album.cover)
@@ -76,9 +101,12 @@ def fetch(playlist):
                 f"tracks/{playlist['name']}/{t.artist.name}/{albumTitle}"
             )
             makedirs(dirPath, exist_ok=True)
-        except Exception as e:
-            print(
-                f"Error Making Directory: {dirPath} \nWith Error: {e.with_traceback()}"
+        except OSError as e:
+            logger.error(
+                "Error Making Directory: %s \nWith Error: %s",
+                dirPath,
+                e,
+                exc_info=True,
             )
 
         # sanitize file name and builds filename
@@ -99,16 +127,21 @@ def fetch(playlist):
             m3u.append(
                 f"{t.artist.name}/{albumTitle}/{fileTitle} - {t.artist.name}.{trackInfoSlot.codecs}"
             )
-        except Exception as e:
-            print(
-                f"ERROR: Can't write: {fileTitle} - {t.artist.name}.{trackInfoSlot.codecs} \nError: {e.with_traceback()}"
+        except OSError as e:
+            logger.error(
+                "ERROR: Can't write: %s - %s.%s \nError: %s",
+                fileTitle,
+                t.artist.name,
+                trackInfoSlot.codecs,
+                e,
+                exc_info=True,
             )
 
         # tag succesfully written files
         time.sleep(1)
         tagger.tag_flac(filePath, t)
         tagger.add_cover(filePath, trackArtworkBytes)
-        print(f"Cover Added to Track: {t.title} - {t.artist.name}")
+        logger.info("Cover Added to Track: %s - %s", t.title, t.artist.name)
 
     # write m3u8 playlist file to disk
     with open(
@@ -118,28 +151,7 @@ def fetch(playlist):
     ) as file:
         for line in m3u:
             file.write(line + "\n")
-    print("Playlist downloaded")
-
-
-def get_search_result():
-    auth_token = ""
-
-    api = ListenBrainzAPI("x4b1d", auth_token)
-    sqd = SquidAPI()
-
-    result = sqd.search_track("crank")
-    time.sleep(0.5)
-    track = sqd.get_track_info(
-        result["data"]["items"][0]["id"], result["data"]["items"][0]["audioQuality"]
-    )
-    track_manifest = json.loads(
-        base64.b64decode(track["data"]["manifest"]).decode("utf-8")
-    )
-    track_b = sqd.get_track_file(track_manifest["urls"][0])
-    with open(
-        f"{result['data']['items'][0]['title']}.{track_manifest['codecs']}", mode="wb"
-    ) as file:
-        file.write(track_b)
+    logger.info("Playlist %s downloaded", playlist["name"])
 
 
 if __name__ == "__main__":

@@ -1,7 +1,11 @@
+import logging
+
 import music_tag
 from mutagen.flac import FLAC
 
-from models import TrackItemSlot
+from models.models import TrackItemSlot
+
+logger = logging.getLogger(__name__)
 
 
 def tag_flac(filePath, trackItemSlot: TrackItemSlot):
@@ -25,7 +29,9 @@ def tag_flac(filePath, trackItemSlot: TrackItemSlot):
     track = FLAC(filePath)
     for idx, tag in trackTags.items():
         track[idx] = tag
-        print(f"Wrote Tag: {idx} With Value: {tag} \nFor Track File: {filePath}")
+        logging.info(
+            "Wrote Tag: %s With Value: %s \nFor Track File: %s", idx, tag, filePath
+        )
     track.save()
 
 

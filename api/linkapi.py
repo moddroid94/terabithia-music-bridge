@@ -1,5 +1,5 @@
-from lbz_api import ListenBrainzAPI
-from hifi_api import AudioHifiAPI
+from api.lbz_api import MetaLBZAPI
+from api.hifi_api import AudioHifiAPI
 
 
 class MetaLinkApi:
@@ -12,7 +12,7 @@ class MetaLinkApi:
     def _set_provider(self):
         match self.provider:
             case "lbz":
-                self.api = ListenBrainzAPI(self.token)
+                self.api = MetaLBZAPI(self.token)
             case "hifi":
                 raise NotImplementedError
             case _:

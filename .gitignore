@@ -15,3 +15,5 @@ config.json
 
 #downloaded files
 tracks/
+
+logs/*

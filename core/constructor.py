@@ -1,14 +1,11 @@
-from models import (
+from models.models import (
     TrackItemSlot,
     ArtistSubSlot,
     AlbumSubSlot,
     TrackInfoSlot,
-    TrackManifest,
-    TrackCandidate,
     AlbumItemSlot,
     CandidateTrack,
 )
-from utils import json_from_base64
 
 
 def _artist_subslot(artistItem):
@@ -71,21 +68,6 @@ def TrackInfoSlotFromResponseData(responseData) -> TrackInfoSlot:
         bitDepth=responseData["bitDepth"],
         sampleRate=responseData["sampleRate"],
         manifest=responseData["manifest"],
-    )
-
-
-def TrackManifestFromInfoManifest(ResponseManifest) -> TrackManifest:
-    decodedResponse = json_from_base64(ResponseManifest)
-    return TrackManifest(
-        codec=decodedResponse["codecs"], url=decodedResponse["urls"][0]
-    )
-
-
-def TrackCandidateFromJSPFTrack(responsePlaylist) -> TrackCandidate:
-    return TrackCandidate(
-        album=responsePlaylist["album"],
-        artist=responsePlaylist["creator"],
-        title=responsePlaylist["title"],
     )
 
 

@@ -1,9 +1,12 @@
+import logging
 import liblistenbrainz
 
-from models import CandidateTrack
+from models.models import CandidateTrack
+
+logger = logging.getLogger(__name__)
 
 
-class ListenBrainzAPI:
+class MetaLBZAPI:
     def __init__(self, token=None):
         self.token = token
         self.client = liblistenbrainz.ListenBrainz()
@@ -27,8 +30,10 @@ class ListenBrainzAPI:
                 artist=i["creator"],
                 id=None,
             )
-            print(
-                f"Appending Item: Title: {candidateTrack.title} - Artist: {candidateTrack.artist}"
+            logging.info(
+                "Appending Item: Title: %s - Artist: %s",
+                candidateTrack.title,
+                candidateTrack.artist,
             )
             tracklist.append(candidateTrack)
         return tracklist
