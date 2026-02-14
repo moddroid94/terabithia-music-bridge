@@ -1,11 +1,11 @@
 {
-    "name": "Discovery Radar",
+    "name": "Discovery Weekly",
     "description": "Test description",
     "metaApi": "lbz",
     "audioApi": "hifi",
     "prompt": "artist:(Noisia) tag:(drum n bass)",
     "mode": "medium",
-    "folderName": "Discovery Radar",
+    "enabled": true,
     "cron": "",
     "cronComm": ""
 }

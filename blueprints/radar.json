@@ -1,0 +1,11 @@
+{
+    "name": "Release Radar",
+    "metaApi": "lbz",
+    "audioApi": "hifi",
+    "prompt": "tag:(drum n bass)",
+    "enabled": true,
+    "cron": "",
+    "cronComm": "",
+    "description": "Test description 2",
+    "mode": "medium"
+}

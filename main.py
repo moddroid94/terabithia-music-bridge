@@ -3,32 +3,122 @@ import json
 from os import path, makedirs, walk
 import logging
 
-from models.models import TrackItemSlot
+from fastapi import HTTPException, FastAPI
+from fastapi.encoders import jsonable_encoder
+from pydantic import ValidationError
+
 from core import tagger
+from models.models import BlueprintSlot, BlueprintSlotUpdate, TrackItemSlot
 from api.linkapi import MetaLinkApi, AudioLinkApi
 from utils.utils import match_candidate_to_track
 
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    filename=f"logs/run{time.time()}.log", encoding="utf-8", level=logging.DEBUG
-)
+app = FastAPI()
 
+# Initialize
+with open("config.json", "rb") as conf:
+    config = json.loads(conf.read())
+logger = logging.getLogger(__name__)
+logger.info("Configuration loaded")
+logging.basicConfig(
+    filename=f"logs/run{time.time()}.log",
+    encoding="utf-8",
+    level=config["logLevel"],
+)
 logger.info("Logging Initialized")
 
 
-def main():
-    with open("config.json", "rb") as conf:
-        config = json.loads(conf.read())
-    logger.info("Configuration loaded")
+# Blueprints Methods
+@app.get("/blueprints/all", response_model=list[BlueprintSlot])
+def get_blueprints() -> list[BlueprintSlot]:
+    """
+    returns a list of blueprints, fails if any of the blueprints is malformed
+    """
+    blueprints = []
+    for dirpath, dirnames, filenames in walk(
+        path.abspath("blueprints"),
+        onerror=(logger.error("Error in Scan Blueprint Directory")),
+    ):
+        logger.info("Scanning %s", dirpath)
+        for file in filenames:
+            blueprints.append(path.join(dirpath, file))
+            logger.info("Found Blueprint %s", file)
+        break  # return only root bp folder
 
+    blueprintSlots: list[BlueprintSlot] = []
+    for playlist in blueprints:
+        with open(playlist, "rb") as item:
+            playlistEntry = json.loads(item.read())
+            try:
+                blueprintSlots.append(BlueprintSlot(**playlistEntry))
+            except ValidationError as e:
+                logger.error("Key Not Found %s", e, exc_info=True)
+                raise HTTPException(
+                    444, "Blueprint Validaiton error, check Logs"
+                ) from e
+
+    return blueprintSlots
+
+
+@app.patch("/blueprint/{name}")
+def set_blueprint(name: str, item: BlueprintSlotUpdate) -> BlueprintSlot:
+    """
+    Edits as blueprint given the name and a json with updated fields
+    return: 445 | 446 | BlueprintSlot
+    """
+    blueprints = []
+    for dirpath, dirnames, filenames in walk(
+        path.abspath("blueprints"),
+        onerror=(logger.error("Error in Scan Blueprint Directory")),
+    ):
+        logger.info("Scanning %s", dirpath)
+        for file in filenames:
+            blueprints.append(path.join(dirpath, file))
+            logger.info("Found Blueprint %s", file)
+        break  # return only root bp folder
+
+    updated_item = None
+    for playlist in blueprints:
+        with open(playlist, "rb") as p:
+            playlistEntry = json.loads(p.read())
+            if playlistEntry["name"] != name:
+                continue
+
+        try:
+            stored_item_model = BlueprintSlot(**playlistEntry)
+            update_data = item.model_dump(exclude_unset=True)
+            updated_item = stored_item_model.model_copy(update=update_data)
+        except Exception as e:
+            logger.error(
+                "Error editing blueprint %s \nError: %s",
+                playlistEntry["name"],
+                e,
+                exc_info=True,
+            )
+            raise HTTPException(445, "Error editing blueprint, check Logs") from e
+
+        try:
+            with open(playlist, "w", encoding="utf-8") as p:
+                json.dump(jsonable_encoder(updated_item), p, ensure_ascii=False)
+                break
+        except Exception as e:
+            logger.error("Error on writing blueprint %s", e, exc_info=True)
+            raise HTTPException(446, "Error on writing blueprint, check logs") from e
+
+    return updated_item
+
+
+# Scheduler Endpoints
+
+
+def main():
     blueprints = []
     for dirpath, dirnames, filenames in walk(path.abspath("blueprints")):
         logger.info("Scanning %s", dirpath)
         for file in filenames:
             blueprints.append(path.join(dirpath, file))
             logger.info("Found Blueprint %s", file)
-        break
+        break  # return only root bp folder
 
     for playlist in blueprints:
         with open(playlist, "rb") as item:

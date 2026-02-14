@@ -1,3 +1,7 @@
+from pydantic import BaseModel
+from typing import Union
+
+
 class TrackItemSlot:
     def __init__(
         self,
@@ -112,3 +116,27 @@ class CandidateTrack:
         self.artist = artist
         self.album = album
         self.id = id
+
+
+class BlueprintSlot(BaseModel):
+    name: str
+    metaApi: str
+    audioApi: str
+    prompt: str
+    enabled: bool
+    cron: str
+    cronComm: str
+    description: str = ""
+    mode: str = "easy"
+
+
+class BlueprintSlotUpdate(BaseModel):
+    name: str | None = None
+    metaApi: str | None = None
+    audioApi: str | None = None
+    prompt: str | None = None
+    enabled: bool | None = None
+    cron: str | None = None
+    cronComm: str | None = None
+    description: str | None = None
+    mode: str | None = None
