@@ -2,10 +2,12 @@ import time
 import json
 from os import path, makedirs, walk
 import logging
+import threading
 
 from fastapi import HTTPException, FastAPI
 from fastapi.encoders import jsonable_encoder
 from pydantic import ValidationError
+import schedule
 
 from core import tagger
 from models.models import BlueprintSlot, BlueprintSlotUpdate, TrackItemSlot
@@ -21,11 +23,14 @@ with open("config.json", "rb") as conf:
 logger = logging.getLogger(__name__)
 logger.info("Configuration loaded")
 logging.basicConfig(
-    filename=f"logs/run{time.time()}.log",
+    filename=f"logs/main_{time.time()}.log",
     encoding="utf-8",
     level=config["logLevel"],
 )
 logger.info("Logging Initialized")
+
+cease_continuous_run = threading.Event()
+threads = []
 
 
 # Blueprints Methods
@@ -109,24 +114,113 @@ def set_blueprint(name: str, item: BlueprintSlotUpdate) -> BlueprintSlot:
 
 
 # Scheduler Endpoints
+@app.post("/scheduler/set/{playlistName}")
+def set_job(playlistName: str, every: list[str], at: str):
+    jobs = schedule.get_jobs(playlistName)
+    if len(jobs) > 0:
+        schedule.clear(playlistName)
+    if "monday" in every:
+        schedule.every().monday.at(at).do(fetch, playlistName).tag(playlistName)
+    if "tuesday" in every:
+        schedule.every().tuesday.at(at).do(fetch, playlistName).tag(playlistName)
+    if "wednesday" in every:
+        schedule.every().wednesday.at(at).do(fetch, playlistName).tag(playlistName)
+    if "thursday" in every:
+        schedule.every().thursday.at(at).do(fetch, playlistName).tag(playlistName)
+    if "friday" in every:
+        schedule.every().friday.at(at).do(fetch, playlistName).tag(playlistName)
+    if "saturday" in every:
+        schedule.every().saturday.at(at).do(fetch, playlistName).tag(playlistName)
+    if "sunday" in every:
+        schedule.every().sunday.at(at).do(fetch, playlistName).tag(playlistName)
 
 
-def main():
+@app.post("/schedule/clear/{playlistName}")
+def clean_job(playlistName):
+    schedule.clear(playlistName)
+
+
+@app.get("/scheduler/all")
+def get_jobs():
+    jobs = schedule.get_jobs()
+    return {
+        json.dumps([str(job), str(job.at_time), str(job.start_day)]) for job in jobs
+    }
+
+
+@app.post("/scheduler/{enabled}")
+def toggle_scheduler(enabled: bool):
+    if len(threads) > 0:
+        if threads[0].is_alive():
+            if not enabled:
+                cease_continuous_run.set()
+                threads[0].join()
+                threads.clear()
+                return "killed and cleaned"
+            return "already running"
+        if not threads[0].is_alive():
+            if enabled:
+                threads[0].join()
+                threads.clear()
+                cease_continuous_run.clear()
+                spawn_thread()
+                return "relaunched zombie"
+            threads[0].join()
+            threads.clear()
+            return "cleaned zolmbie threads"
+    if enabled:
+        cease_continuous_run.clear()
+        spawn_thread()
+        return "build and run thread"
+    return "No threads running"
+
+
+def spawn_thread(interval=1):
+    """Continuously run, while executing pending jobs at each
+    elapsed time interval.
+    @return cease_continuous_run: threading. Event which can
+    be set to cease continuous run. Please note that it is
+    *intended behavior that run_continuously() does not run
+    missed jobs*. For example, if you've registered a job that
+    should run every minute and you set a continuous run
+    interval of one hour then your job won't be run 60 times
+    at each interval but only once.
+    """
+
+    class ScheduleThread(threading.Thread):
+        @classmethod
+        def run(cls):
+            while not cease_continuous_run.is_set():
+                schedule.run_pending()
+                time.sleep(interval)
+
+    continuous_thread = ScheduleThread()
+    continuous_thread.start()
+    threads.append(continuous_thread)
+
+
+def fetch(playlistName):
     blueprints = []
-    for dirpath, dirnames, filenames in walk(path.abspath("blueprints")):
+    playlist = None
+    for dirpath, dirnames, filenames in walk(
+        path.abspath("blueprints"),
+        onerror=logger.error("Error in Scan Blueprint Directory"),
+    ):
         logger.info("Scanning %s", dirpath)
         for file in filenames:
             blueprints.append(path.join(dirpath, file))
             logger.info("Found Blueprint %s", file)
         break  # return only root bp folder
 
-    for playlist in blueprints:
-        with open(playlist, "rb") as item:
+    for p in blueprints:
+        with open(p, "rb") as item:
             playlistEntry = json.loads(item.read())
-        fetch(playlistEntry, config)
-
-
-def fetch(playlist, config):
+            if playlistEntry["name"] == playlistName:
+                playlist = playlistEntry
+                break
+    if playlist is None:
+        logger.error("No Playlist Found for %s", playlistName)
+        return HTTPException(447, "No Playlist Found")
     logger.info("Building playlist: %s", playlist["name"])
     try:
         metaApi = MetaLinkApi(playlist["metaApi"], config["token"])
@@ -138,7 +232,8 @@ def fetch(playlist, config):
     # get candidate tracks from api
     # API returns a list of CandidateTracks from a playlist config entry
     candidateList = metaApi.api.get_candidates(playlist)
-
+    logger.info("got candidates")
+    return
     # matches candidates to available tracks
     # gets full metadata from api for every track and adds to queue
 
@@ -242,7 +337,3 @@ def fetch(playlist, config):
         for line in m3u:
             file.write(line + "\n")
     logger.info("Playlist %s downloaded", playlist["name"])
-
-
-if __name__ == "__main__":
-    main()
