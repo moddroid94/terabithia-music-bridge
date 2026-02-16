@@ -20,27 +20,49 @@ from utils.utils import match_candidate_to_track
 # Initialize logging
 with open("config.json", "rb") as conf:
     config = json.loads(conf.read())
-logger = logging.getLogger(__name__)
-logger.info("Configuration loaded")
-logging.basicConfig(
-    filename="logs/main.log",
-    encoding="utf-8",
-    level=config["logLevel"],
-)
+logger = logging.getLogger("Terabithia")
+schedlogger = logging.getLogger("APScheduler")
+runlogger = logging.getLogger("Runner")
+
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+
+mfh = logging.FileHandler("logs/main.log")
+logger.setLevel(config["logLevel"])
+mfh.setFormatter(formatter)
+logger.addHandler(mfh)
+
+
+fh = logging.FileHandler("logs/scheduler.log")
+schedlogger.setLevel(config["logLevel"])
+fh.setFormatter(formatter)
+schedlogger.addHandler(fh)
+
+
+rfh = logging.FileHandler("logs/run.log")
+runlogger.setLevel(config["logLevel"])
+rfh.setFormatter(formatter)
+runlogger.addHandler(rfh)
+
 logger.info("App Starting")
 
 
+def error_callback(e):
+    logger.error("Error in Scan Blueprint Directory %s", e, exc_info=True)
+
+
 def fetch(playlistName):
+    runlogger.info(playlistName)
     blueprints = []
     playlist = None
     for dirpath, dirnames, filenames in walk(
         path.abspath("blueprints"),
-        onerror=logger.error("Error in Scan Blueprint Directory"),
+        onerror=error_callback,
     ):
-        logger.info("Scanning %s", dirpath)
+        runlogger.info("Scanning %s", dirpath)
         for file in filenames:
             blueprints.append(path.join(dirpath, file))
-            logger.info("Found Blueprint %s", file)
+            runlogger.info("Found Blueprint %s", file)
         break  # return only root bp folder
 
     for p in blueprints:
@@ -50,9 +72,9 @@ def fetch(playlistName):
                 playlist = playlistEntry
                 break
     if playlist is None:
-        logger.error("No Playlist Found for %s", playlistName)
+        runlogger.error("No Playlist Found for %s", playlistName)
         return HTTPException(447, "No Playlist Found")
-    logger.info("Building playlist: %s", playlist["name"])
+    runlogger.info("Building playlist: %s", playlist["name"])
 
     metaApi = MetaLinkApi(playlist["metaApi"], config["token"])
     audioApi = AudioLinkApi(playlist["audioApi"])
@@ -70,7 +92,7 @@ def fetch(playlistName):
 
         for trackSlot in trackSlotList:
             # append only if name + artist is in the track infos
-            logger.info(
+            runlogger.info(
                 "Checking Item: Title: %s Artist: %s\nWith: Title: %s Artist: %s Feat: %s\n",
                 i.title,
                 i.artist,
@@ -82,7 +104,7 @@ def fetch(playlistName):
                 # get additional album info if matching
                 trackSlot.album = audioApi.api.get_album_info(trackSlot.album.id)
                 trackList.append(trackSlot)
-                logger.info(
+                runlogger.info(
                     "Matched: %s - %s\n", trackSlot.title, trackSlot.artist.name
                 )
                 break  # breaks after the first match
@@ -101,9 +123,12 @@ def fetch(playlistName):
         trackInfoSlot = audioApi.api.get_track_manifest(t.id, t.audioQuality)
 
         # get artwork and audio file
-        logger.info("Downloading Item: Title: %s - Artist: %s", t.title, t.artist.name)
-        time.sleep(1.5)
+        runlogger.info(
+            "Downloading Item: Title: %s - Artist: %s", t.title, t.artist.name
+        )
+        time.sleep(5)
         trackBytes = audioApi.api.get_track_file(trackInfoSlot.url)
+        time.sleep(5)
         trackArtworkBytes = audioApi.api.get_album_art(t.album.cover)
 
         albumTitle = "".join(x for x in t.album.title if (x.isalnum() or x in "._- "))
@@ -114,7 +139,7 @@ def fetch(playlistName):
             )
             makedirs(dirPath, exist_ok=True)
         except OSError as e:
-            logger.error(
+            runlogger.error(
                 "Error Making Directory: %s \nWith Error: %s",
                 dirPath,
                 e,
@@ -140,7 +165,7 @@ def fetch(playlistName):
                 f"{t.artist.name}/{albumTitle}/{fileTitle} - {t.artist.name}.{trackInfoSlot.codecs}"
             )
         except OSError as e:
-            logger.error(
+            runlogger.error(
                 "ERROR: Can't write: %s - %s.%s \nError: %s",
                 fileTitle,
                 t.artist.name,
@@ -150,10 +175,10 @@ def fetch(playlistName):
             )
 
         # tag succesfully written files
-        time.sleep(1)
         tagger.tag_flac(filePath, t)
         tagger.add_cover(filePath, trackArtworkBytes)
-        logger.info("Cover Added to Track: %s - %s", t.title, t.artist.name)
+        runlogger.info("Cover Added to Track: %s - %s", t.title, t.artist.name)
+        time.sleep(10)
 
     # write m3u8 playlist file to disk
     with open(
@@ -163,7 +188,7 @@ def fetch(playlistName):
     ) as file:
         for line in m3u:
             file.write(line + "\n")
-    logger.info("Playlist %s downloaded", playlist["name"])
+    runlogger.info("Playlist %s downloaded", playlist["name"])
 
 
 # Initialize scheduler
@@ -174,7 +199,7 @@ jobstore_config = {jbs_name: MemoryJobStore()}
 scheduler = BackgroundScheduler(
     job_defaults=job_defaults_config,
     jobstores=jobstore_config,
-    logger=logging.getLogger("APScheduler"),
+    logger=schedlogger,
 )
 try:
     scheduler.import_jobs(schedule_store_path, jbs_name)

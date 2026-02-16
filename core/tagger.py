@@ -5,7 +5,7 @@ from mutagen.flac import FLAC
 
 from models.models import TrackItemSlot
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("Runner")
 
 
 def tag_flac(filePath, trackItemSlot: TrackItemSlot):

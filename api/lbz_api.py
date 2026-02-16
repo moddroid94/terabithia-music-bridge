@@ -3,7 +3,7 @@ import liblistenbrainz
 
 from models.models import CandidateTrack
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("Runner")
 
 
 class MetaLBZAPI:
