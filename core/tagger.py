@@ -1,3 +1,5 @@
+# pylint: disable=invalid-name
+# mypy: disable-error-code="import-untyped"
 import logging
 
 import music_tag

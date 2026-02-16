@@ -11,6 +11,7 @@ dependencies = [
     "music-tag>=0.4.3",
     "musicbrainzngs>=0.7.1",
     "pillow>=12.1.0",
+    "sqlalchemy>=2.0.46",
 ]
 
 [tool.uv.sources]

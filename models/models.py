@@ -124,7 +124,11 @@ class BlueprintSlot(BaseModel):
     prompt: str
     enabled: bool
     every: str
-    at: str
+    hour: str = "5"
+    minute: str = "0"
+    weekday: str = "*"
+    day: str = "1"
+    month: str = "*"
     description: str = ""
     mode: str = "easy"
 
@@ -136,6 +140,10 @@ class BlueprintSlotUpdate(BaseModel):
     prompt: str | None = None
     enabled: bool | None = None
     every: str | None = None
-    at: str | None = None
+    hour: str | None = None
+    minute: str | None = None
+    weekday: str | None = None
+    day: str | None = None
+    month: str | None = None
     description: str | None = None
     mode: str | None = None

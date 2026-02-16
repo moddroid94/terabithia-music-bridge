@@ -1,4 +1,11 @@
+"""
+Main fastAPI module for Terabithia
+"""
+
+# pylint: disable=invalid-name,broad-exception-caught
+# mypy: disable-error-code="import-untyped"
 import time
+import os
 import json
 from os import path, makedirs, walk
 import logging
@@ -10,7 +17,7 @@ from pydantic import ValidationError
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
-from apscheduler.jobstores.memory import MemoryJobStore
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 
 from core import tagger
 from models.models import BlueprintSlot, BlueprintSlotUpdate, TrackItemSlot
@@ -27,22 +34,27 @@ runlogger = logging.getLogger("Runner")
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 
-mfh = logging.FileHandler("logs/main.log")
+mfh = logging.FileHandler(f"logs/main-{int(time.time())}.log")
 logger.setLevel(config["logLevel"])
 mfh.setFormatter(formatter)
 logger.addHandler(mfh)
 
 
-fh = logging.FileHandler("logs/scheduler.log")
+fh = logging.FileHandler(f"logs/scheduler-{int(time.time())}.log")
 schedlogger.setLevel(config["logLevel"])
 fh.setFormatter(formatter)
 schedlogger.addHandler(fh)
 
+run_handlers = []
 
-rfh = logging.FileHandler("logs/run.log")
-runlogger.setLevel(config["logLevel"])
-rfh.setFormatter(formatter)
-runlogger.addHandler(rfh)
+
+def build_logger(playlist):
+    rfh = logging.FileHandler(f"logs/run-{playlist}-{int(time.time())}.log")
+    runlogger.setLevel(config["logLevel"])
+    rfh.setFormatter(formatter)
+    runlogger.addHandler(rfh)
+    run_handlers.append(rfh)
+
 
 logger.info("App Starting")
 
@@ -52,9 +64,13 @@ def error_callback(e):
 
 
 def fetch(playlistName):
+    build_logger(playlistName)
     runlogger.info(playlistName)
+    time.sleep(10)
+    return
     blueprints = []
     playlist = None
+    # pylint: disable-next=unused-variable
     for dirpath, dirnames, filenames in walk(
         path.abspath("blueprints"),
         onerror=error_callback,
@@ -195,25 +211,22 @@ def fetch(playlistName):
 jbs_name = "jbs_name"
 schedule_store_path = path.abspath("data/schedule.json")
 job_defaults_config = {"coalesce": True}
-jobstore_config = {jbs_name: MemoryJobStore()}
+jobstore_config = {"jbs_name": SQLAlchemyJobStore(url="sqlite:///data/schedule.sqlite")}
 scheduler = BackgroundScheduler(
     job_defaults=job_defaults_config,
     jobstores=jobstore_config,
     logger=schedlogger,
 )
-try:
-    scheduler.import_jobs(schedule_store_path, jbs_name)
-except Exception as e:
-    logger.error("No schedules found, starting fresh. error: %s", e, exc_info=True)
 scheduler.start()
 
 
 # Initialize FastAPI
 # Ensure the scheduler shuts down properly on application exit.
-@asynccontextmanager
+
+
+@asynccontextmanager  # pylint: disable-next=unused-argument, redefined-outer-name
 async def lifespan(app: FastAPI):
     yield
-    scheduler.export_jobs(schedule_store_path)
     scheduler.shutdown()
     logger.info("Scheduler shutdown")
 
@@ -228,9 +241,10 @@ def get_blueprints() -> list[BlueprintSlot]:
     returns a list of blueprints, fails if any of the blueprints is malformed
     """
     blueprints = []
+    # pylint: disable-next=unused-variable
     for dirpath, dirnames, filenames in walk(
         path.abspath("blueprints"),
-        onerror=(logger.error("Error in Scan Blueprint Directory")),
+        onerror=error_callback,
     ):
         logger.info("Scanning %s", dirpath)
         for file in filenames:
@@ -253,16 +267,17 @@ def get_blueprints() -> list[BlueprintSlot]:
     return blueprintSlots
 
 
-@app.patch("/blueprint/{name}", status_code=201)
+@app.patch("/blueprint/{name}")
 def set_blueprint(name: str, item: BlueprintSlotUpdate) -> BlueprintSlot:
     """
-    Edits as blueprint given the name and a json with updated fields
+    Edits a blueprint given the name and a json with updated fields
     return: 445 | 446 | BlueprintSlot
     """
     blueprints = []
+    # pylint: disable-next=unused-variable
     for dirpath, dirnames, filenames in walk(
         path.abspath("blueprints"),
-        onerror=(logger.error("Error in Scan Blueprint Directory")),
+        onerror=error_callback,
     ):
         logger.info("Scanning %s", dirpath)
         for file in filenames:
@@ -270,7 +285,7 @@ def set_blueprint(name: str, item: BlueprintSlotUpdate) -> BlueprintSlot:
             logger.info("Found Blueprint %s", file)
         break  # return only root bp folder
 
-    updated_item = None
+    updated_item: BlueprintSlot
     for playlist in blueprints:
         with open(playlist, "rb") as p:
             playlistEntry = json.loads(p.read())
@@ -301,36 +316,113 @@ def set_blueprint(name: str, item: BlueprintSlotUpdate) -> BlueprintSlot:
     return updated_item
 
 
+@app.post("/blueprint/new", status_code=201)
+def make_blueprint(item: BlueprintSlot) -> BlueprintSlot:
+    """
+    Create a new Blueprint given the json input
+    """
+    try:
+        updated_item = item.model_dump()
+        try:
+            with open(
+                path.abspath(f"blueprints/{item.name}.json"), "x", encoding="utf-8"
+            ) as p:
+                json.dump(jsonable_encoder(updated_item), p, ensure_ascii=False)
+        except FileExistsError as e:
+            logger.error("Blueprint Already Existing")
+            raise HTTPException(499, "Blueprint Already existing") from e
+        except Exception as e:
+            logger.error("Error on writing blueprint file %s", e, exc_info=True)
+            raise HTTPException(446, "Error on writing blueprint, check logs") from e
+    except Exception as e:
+        logger.error(
+            "Error creating blueprint %s \nError: %s",
+            item.name,
+            e,
+            exc_info=True,
+        )
+        raise HTTPException(445, "Error editing blueprint, check Logs") from e
+
+    return item
+
+
+@app.post("/blueprint/delete")
+def remove_blueprint(playlistName):
+    """
+    Deletes a Blueprint given the name
+    """
+    try:
+        os.remove(path.abspath(f"blueprints/{playlistName}.json"))
+    except Exception as e:
+        logger.error("Error deleting blueprint file %s", e, exc_info=True)
+        raise HTTPException(446, "Error on deleting blueprint, check logs") from e
+    return 200
+
+
 # Scheduler Methods
 @app.post("/scheduler/set/{playlistName}", status_code=201)
-def set_job(playlistName: str, every: str, at: str):
-    scheduler.add_job(
-        fetch,
-        args=[playlistName],
-        trigger="cron",
-        minute=every,
-        # hour=at,
-        id=playlistName,
-        name=playlistName,
-        misfire_grace_time=None,  # ensure old schedules are coalesced and runned one time
-        replace_existing=True,
-    )
-    scheduler.export_jobs(schedule_store_path)
+def set_job(playlistName: str):
+    """
+    Set a schedule to run the playlist builder on
+
+    the scheduling interval is build upon cron expression, so the same logic applies.
+    any multiple of the arguments is possible by dividing the values with , (ex: "1,5,15" as day)
+    default to * wildcard for weekday and month if not provided
+
+    playlistName: str = playlist/blueprint name to build\n
+    every: str = "weekly" for weekly cadence, "monthly" for monthly cadence\n
+    in "weekly" mode you have weekday, hour and minute as extra args\n
+    in "montly" mode you have day ( of month ) and month as extra args\n
+
+    returns: 201 for created entry or 404 for mode not found
+    """
+    with open(path.abspath(f"blueprints/{playlistName}.json"), "rb") as item:
+        playlistEntry = json.loads(item.read())
+    if playlistEntry["every"] == "weekly":
+        scheduler.add_job(
+            fetch,
+            args=[playlistName],
+            trigger="cron",
+            day_of_week=playlistEntry["weekday"],
+            hour=playlistEntry["hour"],
+            minute=playlistEntry["minute"],
+            id=playlistName,
+            name=playlistName,
+            misfire_grace_time=None,  # ensure old schedules are coalesced and runned one time
+            replace_existing=True,
+            jobstore=jbs_name,
+        )
+        return
+    if playlistEntry.every == "mothly":
+        scheduler.add_job(
+            fetch,
+            args=[playlistName],
+            trigger="cron",
+            day=playlistEntry["day"],
+            month=playlistEntry["month"],
+            hour=playlistEntry["hour"],
+            id=playlistName,
+            name=playlistName,
+            misfire_grace_time=None,  # ensure old schedules are coalesced and runned one time
+            replace_existing=True,
+            jobstore=jbs_name,
+        )
+        return
+    return 404
 
 
 @app.post("/schedule/clear/{playlistName}")
 def clean_job(playlistName):
     if playlistName == "all":
-        scheduler.remove_all_jobs()
+        scheduler.remove_all_jobs(jbs_name)
     else:
-        scheduler.remove_job(playlistName)
-    scheduler.export_jobs(schedule_store_path)
+        scheduler.remove_job(playlistName, jbs_name)
 
 
 @app.get("/scheduler/all")
 def get_jobs():
     jobs = []
-    joblist = scheduler.get_jobs()
+    joblist = scheduler.get_jobs(jbs_name)
     for job in joblist:
         jobs.append(str(job))
     return list(jobs)
@@ -340,6 +432,7 @@ def get_jobs():
 def toggle_scheduler(enabled: bool):
     if enabled:
         scheduler.resume()
+        return
     scheduler.pause()
 
 
@@ -365,6 +458,9 @@ def job_callback(event):
         logger.error("Error in job: %s", event.exception)
     else:
         logger.info("Job %s Runned Succesfully", event.job_id)
+    # removes custom runner handler after job run, we don't use concurrence so we can safely remove all handlers
+    for h in run_handlers:
+        runlogger.removeHandler(h)
 
 
 scheduler.add_listener(job_callback, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
