@@ -17,3 +17,4 @@ config.json
 tracks/
 
 logs/*
+data/*

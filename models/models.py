@@ -123,8 +123,8 @@ class BlueprintSlot(BaseModel):
     audioApi: str
     prompt: str
     enabled: bool
-    cron: str
-    cronComm: str
+    every: str
+    at: str
     description: str = ""
     mode: str = "easy"
 
@@ -135,7 +135,7 @@ class BlueprintSlotUpdate(BaseModel):
     audioApi: str | None = None
     prompt: str | None = None
     enabled: bool | None = None
-    cron: str | None = None
-    cronComm: str | None = None
+    every: str | None = None
+    at: str | None = None
     description: str | None = None
     mode: str | None = None
