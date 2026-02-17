@@ -99,7 +99,7 @@ cd backend
 # install deps
 uv sync
 # run
-uv run main.py 
+uv run fastapi run main.py 
 ```
 Run the frontend with another terminal and 3 simple commands:
 ```bash
