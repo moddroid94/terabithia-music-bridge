@@ -16,19 +16,21 @@ This repo explains the objective of the project, but does not contain all the fe
 
 The functioning features as of now are:
 - Listenbrainz API integration with:
-    - recommendations for user
-    - radio plylist from track, album, artist or genres
+    - radio suggestions from track, album, artist or genres
 - FLAC Audio Downloads from multiple hifi API source
 - Tagging with artwork from hifi API metadata source
 - Playlist generation
+- Persistent jobs schedule with sqlite
+- Health check endpoint with scheduler state
 
 In Development:
 - [x] yaml Config file prompts and config
 - [x] Complete API-Agnostic interface
-- [x] Full Retry-Logic for API requests
+- [x] Full Retry-Logic for API requests (lbz)
 - [ ] Configurable folder paths
 - [x] Complete logging and error handling
-
+- [x] Frontend
+- [ ] UI Editable config
 
 <br>
 <br>
