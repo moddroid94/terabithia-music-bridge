@@ -390,6 +390,7 @@ def remove_blueprint(playlistName):
     except Exception as e:
         logger.error("Error deleting blueprint file %s", e, exc_info=True)
         raise HTTPException(446, "Error on deleting blueprint, check logs") from e
+    clean_job(playlistName)
     return 200
 
 
