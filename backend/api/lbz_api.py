@@ -26,22 +26,7 @@ class MetaLBZAPI:
         return response
 
     def get_candidates(self, playlist) -> list[CandidateTrack]:
-        retries = 3
-        while retries > 0:
-            response = self._get_radio_json(playlist["prompt"], playlist["mode"])
-            match response.status_code:
-                case 200:
-                    break
-                case 429:
-                    retry_in = response.headers["X-RateLimit-Reset-In"]
-                    retries = retries - 1
-                    time.sleep(int(retry_in) + 5)
-                case _:
-                    retries = retries - 1
-                    time.sleep(5)  # sleep some time
-
-        if retries == 0:
-            raise HTTPException(response.status_code)
+        response = self._get_radio_json(playlist["prompt"], playlist["mode"])
         tracklist: list[CandidateTrack] = []
 
         for i in response["payload"]["jspf"]["playlist"]["track"]:

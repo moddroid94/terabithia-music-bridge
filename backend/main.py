@@ -25,62 +25,69 @@ from models.models import BlueprintSlot, BlueprintSlotUpdate, TrackItemSlot
 from api.linkapi import MetaLinkApi, AudioLinkApi
 from utils.utils import match_candidate_to_track
 
-
-# Initialize logging
+# Load configuration
 with open("config.json", "rb") as conf:
     config = json.loads(conf.read())
-logger = logging.getLogger("Terabithia")
-schedlogger = logging.getLogger("APScheduler")
-runlogger = logging.getLogger("Runner")
 
+# Setup logging
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-
-
+# Main Logger
+logger = logging.getLogger("Terabithia")
 mfh = logging.FileHandler(f"logs/main-{int(time.time())}.log")
 logger.setLevel(config["logLevel"])
 mfh.setFormatter(formatter)
 logger.addHandler(mfh)
-
-
+# Scheduler Log
+schedlogger = logging.getLogger("APScheduler")
 fh = logging.FileHandler(f"logs/scheduler-{int(time.time())}.log")
 schedlogger.setLevel(config["logLevel"])
 fh.setFormatter(formatter)
 schedlogger.addHandler(fh)
 
+# Dynamic Run Logger Builder
 run_handlers = []
+
+runlogger = logging.getLogger("Runner")
+runlogger.setLevel(config["logLevel"])
 
 
 def build_logger(playlist):
     rfh = logging.FileHandler(f"logs/run-{playlist}-{int(time.time())}.log")
-    runlogger.setLevel(config["logLevel"])
     rfh.setFormatter(formatter)
     runlogger.addHandler(rfh)
     run_handlers.append(rfh)
 
 
-logger.info("App Starting")
-
-
+# Scheduler callback functions
 def error_callback(e):
     logger.error("Error in Scan Blueprint Directory %s", e, exc_info=True)
 
 
+def job_callback(event):
+    if event.exception:
+        logger.error("Error in job: %s", event.exception)
+    else:
+        logger.info("Job %s Runned Succesfully", event.job_id)
+    # removes custom runner handler after job run, we don't use concurrence so we can safely remove all handlers
+    for h in run_handlers:
+        runlogger.removeHandler(h)
+
+
 def fetch(playlistName):
     build_logger(playlistName)
-    runlogger.info(playlistName)
-    time.sleep(10)
-    return
+    runlogger.info("Running Job %s", playlistName)
     blueprints = []
     playlist = None
+
     # pylint: disable-next=unused-variable
     for dirpath, dirnames, filenames in walk(
         path.abspath("blueprints"),
         onerror=error_callback,
     ):
-        runlogger.info("Scanning %s", dirpath)
+        runlogger.debug("Scanning %s", dirpath)
         for file in filenames:
             blueprints.append(path.join(dirpath, file))
-            runlogger.info("Found Blueprint %s", file)
+            runlogger.debug("Found Blueprint %s", file)
         break  # return only root bp folder
 
     for p in blueprints:
@@ -105,13 +112,16 @@ def fetch(playlistName):
     # gets full metadata from api for every track and adds to queue
 
     for i in candidateList:
+        time.sleep(4)
         # API returns a list of TrackItemSlot from a prompt
         trackSlotList = audioApi.api.search_track(f"{i.title} {i.artist}")
 
         for trackSlot in trackSlotList:
+            time.sleep(4)
+            match = False
             # append only if name + artist is in the track infos
             runlogger.info(
-                "Checking Item: Title: %s Artist: %s\nWith: Title: %s Artist: %s Feat: %s\n",
+                "\nChecking Item: Title: %s Artist: %s\nWith: Title: %s Artist: %s Feat: %s\n",
                 i.title,
                 i.artist,
                 trackSlot.title,
@@ -125,9 +135,13 @@ def fetch(playlistName):
                 runlogger.info(
                     "Matched: %s - %s\n", trackSlot.title, trackSlot.artist.name
                 )
+                match = True
                 break  # breaks after the first match
 
-        time.sleep(4)
+        if not match:
+            runlogger.warning("No Match For: %s - %s\n", i.title, i.artist)
+
+        # Breaks if reached the number of tracks requested
         if len(trackList) > 10:
             break
 
@@ -137,6 +151,7 @@ def fetch(playlistName):
     m3u.append("#EXTM3U")
     m3u.append(f"#{playlist['name']}")
     for t in trackList:
+        time.sleep(10)
         # get file manifest and info
         trackInfoSlot = audioApi.api.get_track_manifest(t.id, t.audioQuality)
 
@@ -144,13 +159,15 @@ def fetch(playlistName):
         runlogger.info(
             "Downloading Item: Title: %s - Artist: %s", t.title, t.artist.name
         )
+
+        # Get file and artwork
         time.sleep(5)
         trackBytes = audioApi.api.get_track_file(trackInfoSlot.url)
         time.sleep(5)
         trackArtworkBytes = audioApi.api.get_album_art(t.album.cover)
 
-        albumTitle = "".join(x for x in t.album.title if (x.isalnum() or x in "._- "))
         # make dirs recursively
+        albumTitle = "".join(x for x in t.album.title if (x.isalnum() or x in "._- "))
         try:
             dirPath = path.abspath(
                 f"tracks/{playlist['name']}/{t.artist.name}/{albumTitle}"
@@ -164,7 +181,7 @@ def fetch(playlistName):
                 exc_info=True,
             )
 
-        # sanitize file name and builds filename
+        # sanitize filename
         fileTitle = "".join(x for x in t.title if (x.isalnum() or x in "._- "))
 
         filePath = path.abspath(
@@ -172,7 +189,7 @@ def fetch(playlistName):
         )
 
         # write files to disk and append relative path to m3u
-        time.sleep(4)
+        time.sleep(2)
         try:
             with open(
                 filePath,
@@ -195,8 +212,7 @@ def fetch(playlistName):
         # tag succesfully written files
         tagger.tag_flac(filePath, t)
         tagger.add_cover(filePath, trackArtworkBytes)
-        runlogger.info("Cover Added to Track: %s - %s", t.title, t.artist.name)
-        time.sleep(10)
+        runlogger.info("Cover Added to Track: %s - %s \n", t.title, t.artist.name)
 
     # write m3u8 playlist file to disk
     with open(
@@ -219,12 +235,12 @@ scheduler = BackgroundScheduler(
     jobstores=jobstore_config,
     logger=schedlogger,
 )
+scheduler.start()
+scheduler.add_listener(job_callback, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
 
 # Initialize FastAPI
 # Ensure the scheduler shuts down properly on application exit.
-
-
 @asynccontextmanager  # pylint: disable-next=unused-argument, redefined-outer-name
 async def lifespan(app: FastAPI):
     yield
@@ -236,7 +252,6 @@ app = FastAPI(lifespan=lifespan)
 origins = [
     "http://192.168.178.54:4545",
 ]
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins="*",
@@ -245,9 +260,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-scheduler.start()
 
-
+## API Methods
 # Blueprints Methods
 @app.get("/blueprints/all", response_model=list[BlueprintSlot])
 def get_blueprints() -> list[BlueprintSlot]:
@@ -413,7 +427,7 @@ def set_job(playlistName: str):
             jobstore=jbs_name,
         )
         return
-    if playlistEntry.every == "mothly":
+    if playlistEntry.every == "monthly":
         scheduler.add_job(
             fetch,
             args=[playlistName],
@@ -470,24 +484,4 @@ def heatbeat():
             return "Status Unknown"
 
 
-## SCHEDULER RELATED FUNCTIONS
-
-
-def job_callback(event):
-    if event.exception:
-        logger.error("Error in job: %s", event.exception)
-    else:
-        logger.info("Job %s Runned Succesfully", event.job_id)
-    # removes custom runner handler after job run, we don't use concurrence so we can safely remove all handlers
-    for h in run_handlers:
-        runlogger.removeHandler(h)
-
-
-scheduler.add_listener(job_callback, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
-
-
-def import_jobs():
-    try:
-        scheduler.import_jobs(schedule_store_path, jbs_name)
-    except Exception as e:
-        logger.error("No schedules found, starting fresh. error: %s", e, exc_info=True)
+logger.info("App Started")
