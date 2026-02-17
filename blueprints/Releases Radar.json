@@ -1,1 +1,0 @@
-{"name": "Releases Radar", "metaApi": "lbz", "audioApi": "hifi", "prompt": "tag:(drum and bass)", "enabled": true, "every": "weekly", "hour": "*", "minute": "10", "weekday": "*", "day": "1", "month": "*", "description": "Weekly discovery", "mode": "easy"}

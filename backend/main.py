@@ -12,6 +12,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import HTTPException, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 from pydantic import ValidationError
 
@@ -23,6 +24,7 @@ from core import tagger
 from models.models import BlueprintSlot, BlueprintSlotUpdate, TrackItemSlot
 from api.linkapi import MetaLinkApi, AudioLinkApi
 from utils.utils import match_candidate_to_track
+
 
 # Initialize logging
 with open("config.json", "rb") as conf:
@@ -217,7 +219,6 @@ scheduler = BackgroundScheduler(
     jobstores=jobstore_config,
     logger=schedlogger,
 )
-scheduler.start()
 
 
 # Initialize FastAPI
@@ -232,6 +233,19 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+origins = [
+    "http://192.168.178.54:4545",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins="*",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+scheduler.start()
 
 
 # Blueprints Methods
@@ -312,7 +326,10 @@ def set_blueprint(name: str, item: BlueprintSlotUpdate) -> BlueprintSlot:
         except Exception as e:
             logger.error("Error on writing blueprint %s", e, exc_info=True)
             raise HTTPException(446, "Error on writing blueprint, check logs") from e
-
+    if updated_item.enabled:
+        set_job(updated_item.name)
+    else:
+        clean_job(updated_item.name)
     return updated_item
 
 
@@ -342,7 +359,10 @@ def make_blueprint(item: BlueprintSlot) -> BlueprintSlot:
             exc_info=True,
         )
         raise HTTPException(445, "Error editing blueprint, check Logs") from e
-
+    if item.enabled:
+        set_job(item.name)
+    else:
+        clean_job(item.name)
     return item
 
 
@@ -437,17 +457,17 @@ def toggle_scheduler(enabled: bool):
 
 
 # Heartbeat Method
-@app.post("/health")
+@app.get("/health")
 def heatbeat():
     match scheduler.state:
         case 1:
-            return {"Running and processing"}
+            return "Running and processing"
         case 2:
-            return {"Processing Paused"}
+            return "Processing Paused"
         case 0:
-            return {"Not Running"}
+            return "Not Running"
         case _:
-            return {"Status Unknown %s", scheduler.state}
+            return "Status Unknown"
 
 
 ## SCHEDULER RELATED FUNCTIONS

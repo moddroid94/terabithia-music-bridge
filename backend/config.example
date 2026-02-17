@@ -1,0 +1,7 @@
+{
+    "user": "your_listenbrainz_username(optional)",
+    "token": "your_listenbrainz_token",
+    "outputPath": "NotImplemented",
+    "logLevel": "DEBUG",
+    "interval": 1000
+}

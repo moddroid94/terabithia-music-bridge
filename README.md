@@ -2,7 +2,6 @@
 
 [![STATUS](https://img.shields.io/badge/Status-BETA-orange?style=for-the-badge&logo=as&logoColor=white)](https://www.navidrome.org/)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![Built for Navidrome](https://img.shields.io/badge/Built_for-Navidrome-orange?style=for-the-badge&logo=navidrome&logoColor=white)](https://www.navidrome.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/license/MIT)
 
 **Terabithia** is a lightweight and simple music discovery and automated downloader designed for self-hosted systems. While tested with [Navidrome](https://www.navidrome.org/), it should remain completely system-agnostic, bridging the gap between online music discovery and your local library.
@@ -26,16 +25,18 @@ The functioning features as of now are:
 In Development:
 - [x] yaml Config file prompts and config
 - [x] Complete API-Agnostic interface
-- [ ] Full Retry-Logic for API requests
+- [x] Full Retry-Logic for API requests
 - [ ] Configurable folder paths
-- [ ] Complete logging and error handling
+- [x] Complete logging and error handling
 
----
+
+<br>
+<br>
 
 ## ✨ Features (WIP)
 
 - 🧠 **Smart Discovery**: Get recommendations based on multiple API sources and custom prompts.
-- ⚙️ **Multi Playlist Generation**: Generates multiple playlists based on the prompt list. 
+- ⚙️ **Multi Playlist Generation**: Generates multiple playlists based on the prompt and parameters. 
 - 🕹️ **Pluggable API**: Common interfaces allows to add APIs with ease (for devs).
 - 🔍 **Automated Matching**: Searches and matches tracks across Audio API sources.
 - 💾 **Seamless FLAC Downloader**: Downloads FLAC files and organizes them into your library's folder structure.
@@ -43,7 +44,14 @@ In Development:
 - 🎼 **Playlist Generation**: Creates standard relative `.m3u8` files for instant import into Navidrome or any other player.
 - 🛠️ **System Agnostic**: Works on any filesystem; if your player can read a folder, it can use Terabithia.
 
----
+<br>
+
+# Screenshots:
+
+![home page][home]
+![schedules][sched]
+
+<br>
 
 ## ⚙️ How it Works
 
@@ -62,40 +70,48 @@ Terabithia acts as a bridge betweem your self-hosted music ecosystem and online 
 ### Prerequisites
 - Python 3.12+
 - uv
+- bun
+
+---
+
+## 🛠 Usage
+
+**Right now only implements the radio API for listenbrainz.
+follow the prompt guideline here for config prompt generation [Radio API](https://troi.readthedocs.io/en/latest/lb_radio.html)** 
 
 ### Setup
 ```bash
 # Clone the repository
 git clone https://github.com/moddroid94/terabithia.git
 cd terabithia
-
-# Install dependencies
-uv sync
 ```
-
----
-
-## 🛠 Usage
-
-
-
-**Right now only implements the radio API for listenbrainz.
-follow the prompt guideline here for config prompt generation [Radio API](https://troi.readthedocs.io/en/latest/lb_radio.html)** 
 
 ### Configuration:
 
-Create a config.json from the example in the repo, then run, the playlists will be generated under a newly created tracks folder inside the root of the project.
+Create a config.json from the example in the repo, then run.
 
 ### Run:
-Run the tool with a simple command to start the process:
+Run the backend with 3 simple commands:
 ```bash
+cd backend
+# install deps
+uv sync
 # run
 uv run main.py 
 ```
+Run the frontend with another terminal and 3 simple commands:
+```bash
+cd frontend
+# install deps
+bun install
+# run
+bun run dev
+```
+
 ---
 ## API Availability:
   - AudioAPI: hifi
-  - MetaAPI: listenbrainz (lbz)
+  - MetaAPI: lbz (Listenbrainz)
 
 ## 🤝 Contributing
 
@@ -109,6 +125,9 @@ Contributions are what make the open-source community such an amazing place to l
 
 ---
 
+# Disclaimer
+The author(s) of this project are not responsible for how you use the app. Users are solely responsible for ensuring their use of the app complies with applicable laws and terms of service. This software is provided "as is" without warranty of any kind.
+
 ## 📄 License
 
 Distributed under the MIT License. See `LICENSE.md` for more information.
@@ -117,3 +136,6 @@ Distributed under the MIT License. See `LICENSE.md` for more information.
 <p align="center">
   Built with ❤️ for the self-hosted community.
 </p>
+
+[sched]: images/image-1.png
+[home]: images/image.png

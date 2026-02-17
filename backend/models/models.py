@@ -118,6 +118,7 @@ class CandidateTrack:
 
 
 class BlueprintSlot(BaseModel):
+    id: str
     name: str
     metaApi: str
     audioApi: str
@@ -134,6 +135,7 @@ class BlueprintSlot(BaseModel):
 
 
 class BlueprintSlotUpdate(BaseModel):
+    id: str
     name: str | None = None
     metaApi: str | None = None
     audioApi: str | None = None
