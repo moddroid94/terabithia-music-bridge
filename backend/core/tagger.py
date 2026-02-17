@@ -1,3 +1,5 @@
+# pylint: disable=invalid-name
+# mypy: disable-error-code="import-untyped"
 import logging
 
 import music_tag
@@ -5,7 +7,7 @@ from mutagen.flac import FLAC
 
 from models.models import TrackItemSlot
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("Runner")
 
 
 def tag_flac(filePath, trackItemSlot: TrackItemSlot):

@@ -1,0 +1,41 @@
+import { 
+  LayoutDashboard, 
+  CalendarClock, 
+  Plus, 
+  Search, 
+  Settings, 
+  Moon, 
+  Sun, 
+  Trash2, 
+  Edit2, 
+  PlayCircle, 
+  PauseCircle, 
+  X,
+  Save,
+  Music,
+  MoreVertical,
+  Check,
+  RefreshCw,
+  Clock
+} from 'lucide-react';
+
+export const Icons = {
+  Dashboard: LayoutDashboard,
+  Schedule: CalendarClock,
+  Plus,
+  Search,
+  Settings,
+  Moon,
+  Sun,
+  Trash: Trash2,
+  Edit: Edit2,
+  Play: PlayCircle,
+  Pause: PauseCircle,
+  X,
+  Save,
+  Music,
+  More: MoreVertical,
+  Check,
+  Refresh: RefreshCw,
+  Clock
+};

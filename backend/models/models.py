@@ -1,3 +1,6 @@
+from pydantic import BaseModel
+
+
 class TrackItemSlot:
     def __init__(
         self,
@@ -112,3 +115,37 @@ class CandidateTrack:
         self.artist = artist
         self.album = album
         self.id = id
+
+
+class BlueprintSlot(BaseModel):
+    id: str
+    name: str
+    metaApi: str
+    audioApi: str
+    prompt: str
+    enabled: bool
+    every: str
+    hour: str = "5"
+    minute: str = "0"
+    weekday: str = "*"
+    day: str = "1"
+    month: str = "*"
+    description: str = ""
+    mode: str = "easy"
+
+
+class BlueprintSlotUpdate(BaseModel):
+    id: str
+    name: str | None = None
+    metaApi: str | None = None
+    audioApi: str | None = None
+    prompt: str | None = None
+    enabled: bool | None = None
+    every: str | None = None
+    hour: str | None = None
+    minute: str | None = None
+    weekday: str | None = None
+    day: str | None = None
+    month: str | None = None
+    description: str | None = None
+    mode: str | None = None
