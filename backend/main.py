@@ -283,10 +283,10 @@ def get_blueprints() -> list[BlueprintSlot]:
         path.abspath("blueprints"),
         onerror=error_callback,
     ):
-        logger.info("Scanning %s", dirpath)
+        logger.debug("Scanning %s", dirpath)
         for file in filenames:
             blueprints.append(path.join(dirpath, file))
-            logger.info("Found Blueprint %s", file)
+            logger.debug("Found Blueprint %s", file)
         break  # return only root bp folder
 
     blueprintSlots: list[BlueprintSlot] = []
@@ -316,10 +316,10 @@ def set_blueprint(name: str, item: BlueprintSlotUpdate) -> BlueprintSlot:
         path.abspath("blueprints"),
         onerror=error_callback,
     ):
-        logger.info("Scanning %s", dirpath)
+        logger.debug("Scanning %s", dirpath)
         for file in filenames:
             blueprints.append(path.join(dirpath, file))
-            logger.info("Found Blueprint %s", file)
+            logger.debug("Found Blueprint %s", file)
         break  # return only root bp folder
 
     updated_item: BlueprintSlot
