@@ -16,6 +16,8 @@ config.json
 
 #downloaded files
 tracks/
+output/music/
+output/playlists/
 
 logs/*
 data/*

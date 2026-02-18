@@ -160,18 +160,11 @@ def fetch(playlistName):
             "Downloading Item: Title: %s - Artist: %s", t.title, t.artist.name
         )
 
-        # Get file and artwork
-        time.sleep(5)
-        trackBytes = audioApi.api.get_track_file(trackInfoSlot.url)
-        time.sleep(5)
-        trackArtworkBytes = audioApi.api.get_album_art(t.album.cover)
-
         # make dirs recursively
+        # sanitize album name
         albumTitle = "".join(x for x in t.album.title if (x.isalnum() or x in "._- "))
         try:
-            dirPath = path.abspath(
-                f"tracks/{playlist['name']}/{t.artist.name}/{albumTitle}"
-            )
+            dirPath = path.abspath(f"output/music/{t.artist.name}/{albumTitle}")
             makedirs(dirPath, exist_ok=True)
         except OSError as e:
             runlogger.error(
@@ -185,8 +178,24 @@ def fetch(playlistName):
         fileTitle = "".join(x for x in t.title if (x.isalnum() or x in "._- "))
 
         filePath = path.abspath(
-            f"tracks/{playlist['name']}/{t.artist.name}/{albumTitle}/{fileTitle} - {t.artist.name}.{trackInfoSlot.codecs}"
+            f"output/music/{t.artist.name}/{albumTitle}/{fileTitle} - {t.artist.name}.{trackInfoSlot.codecs}"
         )
+
+        # check existing files
+        try:
+            with open(filePath, "rb") as f:
+                if f:
+                    pass
+            logger.info("Track %s already exists, skipping download", fileTitle)
+            break  # file Exists
+        except OSError:
+            pass
+
+        # Get file and artwork
+        time.sleep(5)
+        trackBytes = audioApi.api.get_track_file(trackInfoSlot.url)
+        time.sleep(5)
+        trackArtworkBytes = audioApi.api.get_album_art(t.album.cover)
 
         # write files to disk and append relative path to m3u
         time.sleep(2)
@@ -197,7 +206,7 @@ def fetch(playlistName):
             ) as file:
                 file.write(trackBytes)
             m3u.append(
-                f"{t.artist.name}/{albumTitle}/{fileTitle} - {t.artist.name}.{trackInfoSlot.codecs}"
+                f"../music/{t.artist.name}/{albumTitle}/{fileTitle} - {t.artist.name}.{trackInfoSlot.codecs}"
             )
         except OSError as e:
             runlogger.error(
@@ -216,7 +225,7 @@ def fetch(playlistName):
 
     # write m3u8 playlist file to disk
     with open(
-        f"tracks/{playlist['name']}/{playlist['name']}.m3u8",
+        f"output/playlists/{playlist['name']}.m3u8",
         encoding="utf-8",
         mode="w",
     ) as file:
