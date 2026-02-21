@@ -132,6 +132,7 @@ class BlueprintSlot(BaseModel):
     month: str = "*"
     description: str = ""
     mode: str = "easy"
+    quantity: int = 15
 
 
 class BlueprintSlotUpdate(BaseModel):
@@ -149,6 +150,7 @@ class BlueprintSlotUpdate(BaseModel):
     month: str | None = None
     description: str | None = None
     mode: str | None = None
+    quantity: int | None = None
 
 
 class RunItem(BaseModel):

@@ -13,6 +13,7 @@ export interface Blueprint {
   month: string;
   description: string;
   mode: 'easy' | 'medium' | 'hard';
+  quantity: number;
 }
 
 export type SchedulerState = 'Running and processing' | 'Processing Paused' | 'Not Running' | 'Status Unknown';

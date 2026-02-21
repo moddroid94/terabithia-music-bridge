@@ -145,7 +145,7 @@ def fetch(playlistName):
             runlogger.warning("No Match For: %s - %s\n", i.title, i.artist)
 
         # Breaks if reached the number of tracks requested
-        if len(trackList) > 3:
+        if len(trackList) > playlist["quantity"]:
             break
 
     # get track files from queue list and
