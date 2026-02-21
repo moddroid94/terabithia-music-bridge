@@ -5,6 +5,7 @@ Main fastAPI module for Terabithia
 # pylint: disable=invalid-name,broad-exception-caught
 # mypy: disable-error-code="import-untyped"
 import time
+import datetime
 import os
 import json
 from os import path, makedirs, walk
@@ -21,9 +22,9 @@ from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 
 from core import tagger
-from models.models import BlueprintSlot, BlueprintSlotUpdate, TrackItemSlot
+from models.models import BlueprintSlot, BlueprintSlotUpdate, TrackItemSlot, RunItem
 from api.linkapi import MetaLinkApi, AudioLinkApi
-from utils.utils import match_candidate_to_track
+from utils.utils import match_candidate_to_track, generate_report
 
 # Load configuration
 with open("config.json", "rb") as conf:
@@ -78,7 +79,7 @@ def fetch(playlistName):
     runlogger.info("Running Job %s", playlistName)
     blueprints = []
     playlist = None
-
+    trackList: list[TrackItemSlot] = []
     # pylint: disable-next=unused-variable
     for dirpath, dirnames, filenames in walk(
         path.abspath("blueprints"),
@@ -99,18 +100,16 @@ def fetch(playlistName):
     if playlist is None:
         runlogger.error("No Playlist Found for %s", playlistName)
         return HTTPException(447, "No Playlist Found")
+
     runlogger.info("Building playlist: %s", playlist["name"])
 
     metaApi = MetaLinkApi(playlist["metaApi"], config["token"])
     audioApi = AudioLinkApi(playlist["audioApi"])
 
-    trackList: list[TrackItemSlot] = []
     # get candidate tracks from api
-    # API returns a list of CandidateTracks from a playlist config entry
     candidateList = metaApi.api.get_candidates(playlist)
-    # matches candidates to available tracks
-    # gets full metadata from api for every track and adds to queue
 
+    # matches candidates to available tracks
     for i in candidateList:
         time.sleep(4)
         # API returns a list of TrackItemSlot from a prompt
@@ -142,7 +141,7 @@ def fetch(playlistName):
             runlogger.warning("No Match For: %s - %s\n", i.title, i.artist)
 
         # Breaks if reached the number of tracks requested
-        if len(trackList) > 10:
+        if len(trackList) > 3:
             break
 
     # get track files from queue list and
@@ -231,13 +230,20 @@ def fetch(playlistName):
     ) as file:
         for line in m3u:
             file.write(line + "\n")
-    runlogger.info("Playlist %s downloaded", playlist["name"])
+    runlogger.info("Playlist %s downloaded - Generating Report..", playlist["name"])
+    make_report(
+        playlistName=playlist["name"],
+        runnedAt=str(datetime.datetime.now()),
+        blueprint=playlist,
+        alogger=runlogger,
+    )
 
 
 # Initialize scheduler
 jbs_name = "jbs_name"
 schedule_store_path = path.abspath("data/schedule.json")
 job_defaults_config = {"coalesce": True}
+executors = {"default": {"type": "threadpool", "max_workers": 1}}
 jobstore_config = {"jbs_name": SQLAlchemyJobStore(url="sqlite:///data/schedule.sqlite")}
 scheduler = BackgroundScheduler(
     job_defaults=job_defaults_config,
@@ -270,8 +276,8 @@ app.add_middleware(
 )
 
 
-## API Methods
-# Blueprints Methods
+## API METHODS ##
+## Blueprints Methods ##
 @app.get("/blueprints/all", response_model=list[BlueprintSlot])
 def get_blueprints() -> list[BlueprintSlot]:
     """
@@ -302,6 +308,41 @@ def get_blueprints() -> list[BlueprintSlot]:
                 ) from e
 
     return blueprintSlots
+
+
+@app.get("/blueprint", response_model=BlueprintSlot)
+def get_blueprint(playlistName) -> BlueprintSlot:
+    """
+    returns a list of blueprints, fails if any of the blueprints is malformed
+    """
+    blueprints = []
+    # pylint: disable-next=unused-variable
+    for dirpath, dirnames, filenames in walk(
+        path.abspath("blueprints"),
+        onerror=error_callback,
+    ):
+        logger.debug("Scanning %s", dirpath)
+        for file in filenames:
+            blueprints.append(path.join(dirpath, file))
+            logger.debug("Found Blueprint %s", file)
+        break  # return only root bp folder
+
+    blueprintSlot: BlueprintSlot
+    for playlist in blueprints:
+        with open(playlist, "rb") as item:
+            playlistEntry = json.loads(item.read())
+            if playlistEntry.name == playlistName:
+                try:
+                    blueprintSlot = BlueprintSlot(**playlistEntry)
+                except ValidationError as e:
+                    logger.error("Key Not Found %s", e, exc_info=True)
+                    raise HTTPException(
+                        444, "Blueprint Validaiton error, check Logs"
+                    ) from e
+            else:
+                logger.error("No blueprint found for %a", playlistName)
+
+    return blueprintSlot
 
 
 @app.patch("/blueprint/{name}")
@@ -403,7 +444,7 @@ def remove_blueprint(playlistName):
     return 200
 
 
-# Scheduler Methods
+## Scheduler Methods ##
 @app.post("/scheduler/set/{playlistName}", status_code=201)
 def set_job(playlistName: str):
     """
@@ -480,9 +521,8 @@ def toggle_scheduler(enabled: bool):
     scheduler.pause()
 
 
-# Heartbeat Method
-@app.get("/health")
-def heatbeat():
+@app.get("/scheduler/state")
+def heartbeat():
     match scheduler.state:
         case 1:
             return "Running and processing"
@@ -492,6 +532,61 @@ def heatbeat():
             return "Not Running"
         case _:
             return "Status Unknown"
+
+
+## Report Methods ##
+@app.get("/reports/all")
+def get_reports() -> list[RunItem]:
+    reports = []
+    # pylint: disable-next=unused-variable
+    for dirpath, dirnames, filenames in walk(
+        path.abspath("output/reports"),
+        onerror=error_callback,
+    ):
+        logger.debug("Scanning %s", dirpath)
+        for file in filenames:
+            reports.append(path.join(dirpath, file))
+            logger.debug("Found Report %s", file)
+        break  # return only root bp folder
+
+    RunItems: list[RunItem] = []
+    for report in reports:
+        with open(report, "rb") as item:
+            reportlist = json.loads(item.read())
+            try:
+                RunItems.append(
+                    RunItem(
+                        name=reportlist["name"],
+                        runnedAt=reportlist["runnedAt"],
+                        blueprint=reportlist["blueprint"],
+                        tracklist=reportlist["tracklist"],
+                    )
+                )
+            except ValidationError as e:
+                logger.error("Key Not Found %s", e, exc_info=True)
+                raise HTTPException(444, "Report Validaiton error, check Logs") from e
+
+    return RunItems
+
+
+@app.post("/reports/{playlistName}")
+def make_report(playlistName, runnedAt="", blueprint=None, alogger=logger):
+    if runnedAt == "":
+        runnedAt = str(datetime.datetime.now())
+    if blueprint is None:
+        blueprint = get_blueprint(playlistName)
+
+    response = generate_report(
+        playlistName, runnedAt, blueprint, alogger, error_callback
+    )
+
+    with open(
+        f"output/reports/{playlistName}-{str(runnedAt)[:10]}.json",
+        "w",
+        encoding="utf-8",
+    ) as f:
+        f.write(json.dumps(response))
+    return response
 
 
 logger.info("App Started")

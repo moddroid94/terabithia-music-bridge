@@ -3,17 +3,18 @@ import { Layout } from './components/Layout';
 import { BlueprintList } from './components/BlueprintList';
 import { BlueprintForm } from './components/BlueprintForm';
 import { ScheduleList } from './components/ScheduleList';
+import { RunsList } from './components/RunList';
 import { api } from './services/api';
-import { Blueprint, SchedulerState } from './types';
+import { Blueprint, SchedulerState, RunItem } from './types';
 
 const App: React.FC = () => {
   // --- State ---
-  const [activeTab, setActiveTab] = useState<'blueprints' | 'schedules'>('blueprints');
+  const [activeTab, setActiveTab] = useState<'blueprints' | 'schedules' | 'runs'>('blueprints');
   const [isDark, setIsDark] = useState(false);
   const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
   const [schedules, setSchedules] = useState<string[]>([]);
   const [schedulerState, setSchedulerState] = useState<SchedulerState>('running');
-
+  const [runs, setRuns] = useState<RunItem[]>([]);
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBlueprint, setEditingBlueprint] = useState<Blueprint | null>(null);
@@ -42,7 +43,12 @@ const App: React.FC = () => {
       if (activeTab === 'blueprints') {
         const data = await api.getBlueprints();
         setBlueprints(data);
-      } else {
+      }
+      if (activeTab === 'runs') {
+        const runs = await api.getRuns()
+        setRuns(runs);
+      }
+      if (activeTab === 'schedules') {
         const scheds = await api.getSchedules();
         const state = await api.getSchedulerState();
         setSchedules(scheds);
@@ -113,7 +119,6 @@ const App: React.FC = () => {
     try {
       const newState = await api.toggleSchedulerState();
       setSchedulerState(newState);
-      // Refresh schedules as pausing/resuming changes the list
       const newSchedules = await api.getSchedules();
       setSchedules(newSchedules);
     } catch (err) {
@@ -138,13 +143,23 @@ const App: React.FC = () => {
           onDelete={handleDeleteBlueprint}
         />
       ) : (
+        <></>
+      )}
+      {activeTab === 'schedules' ? (
         <ScheduleList
           schedules={schedules}
           schedulerState={schedulerState}
           onToggleScheduler={handleToggleScheduler}
         />
+      ) : (
+        <></>
       )}
-
+      {activeTab === 'runs' ? (
+        <RunsList runs={runs}
+        />
+      ) : (
+        <></>
+      )}
       {isModalOpen && (
         <BlueprintForm
           initialData={editingBlueprint}

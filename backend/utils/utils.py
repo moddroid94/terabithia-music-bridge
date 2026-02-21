@@ -1,5 +1,8 @@
 import json
 import base64
+from os import path, walk
+
+from core.tagger import get_flac_info
 
 
 def json_from_base64(base64_bytes):
@@ -34,3 +37,75 @@ def match_candidate_to_track(candidateTrack, trackSlot) -> bool:
     ):
         return True
     return False
+
+
+def generate_report(playlistName, runnedAt, blueprint, logger, error_callback):
+    playlists = []
+    filelist = []
+    tracklist = []
+
+    # pylint: disable-next=unused-variable
+    for dirpath, dirnames, filenames in walk(
+        path.abspath("output/playlists"),
+        onerror=error_callback,
+    ):
+        logger.debug("Scanning %s", dirpath)
+        for file in filenames:
+            playlists.append(path.join(dirpath, file))
+            logger.debug("Found Playlist %s", file)
+        break  # return only root bp folder
+
+    for p in playlists:
+        logger.info("reading %s", p)
+        with open(p, "r", encoding="utf-8") as item:
+            lines = item.readlines()
+            logger.info("reading %s", lines[1])
+            if playlistName in lines[1]:
+                for t in lines[2:]:
+                    filelist.append(
+                        t[3:-1]
+                    )  # slice to remove the ../ and \n from the track line
+
+    for f in filelist:
+        logger.info("reading %s", f)
+        rel_path = f"output/{f}"
+        full_path = path.abspath(rel_path)
+        data = get_flac_info(full_path)
+        tracklist.append(data)
+
+    if len(tracklist) < 1:
+        logger.error("No Playlist Found for %s", playlistName)
+        return None
+    report = {
+        "name": playlistName,
+        "runnedAt": runnedAt,
+        "blueprint": blueprint,
+        "tracklist": tracklist,
+    }
+    return report
+
+
+def get_blueprint_match(playlistName, logger, error_callback):
+    blueprints = []
+    playlist = None
+    # pylint: disable-next=unused-variable
+    for dirpath, dirnames, filenames in walk(
+        path.abspath("blueprints"),
+        onerror=error_callback,
+    ):
+        logger.debug("Scanning %s", dirpath)
+        for file in filenames:
+            blueprints.append(path.join(dirpath, file))
+            logger.debug("Found Blueprint %s", file)
+        break  # return only root bp folder
+
+    for p in blueprints:
+        with open(p, "rb") as item:
+            playlistEntry = json.loads(item.read())
+            if playlistEntry["name"] == playlistName:
+                playlist = playlistEntry
+                break
+    if playlist is None:
+        logger.error("No Playlist Found for %s", playlistName)
+        return None
+    return playlist

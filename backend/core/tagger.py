@@ -1,6 +1,7 @@
 # pylint: disable=invalid-name
 # mypy: disable-error-code="import-untyped"
 import logging
+import base64
 
 import music_tag
 from mutagen.flac import FLAC
@@ -43,3 +44,17 @@ def add_cover(FilePath, artworkBytes):
     # Add a new picture
     track["artwork"] = artworkBytes
     track.save()
+
+
+def get_flac_info(filePath):
+    trackTags = {}
+    track = FLAC(filePath)
+    for i, v in track.tags.items():
+        try:
+            trackTags[i] = list(v)
+        except:  # noqa: E722 #pylint: disable=W0702
+            pass
+    trackTags["LENGTH"] = track.info.length
+    artbytes = track.pictures[0].data
+    trackTags["ARTWORK"] = base64.b64encode(artbytes).decode()
+    return trackTags

@@ -24,3 +24,11 @@ export interface ScheduleItem {
   nextRun: string;
   trigger: string;
 }
+
+export interface RunItem {
+  name: string;
+  runnedAt: string;
+  blueprint: Blueprint;
+  tracklist: [];
+
+}

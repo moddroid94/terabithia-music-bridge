@@ -149,3 +149,10 @@ class BlueprintSlotUpdate(BaseModel):
     month: str | None = None
     description: str | None = None
     mode: str | None = None
+
+
+class RunItem(BaseModel):
+    name: str
+    runnedAt: str
+    blueprint: BlueprintSlot
+    tracklist: list

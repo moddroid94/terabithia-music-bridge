@@ -33,8 +33,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
           <button
             onClick={() => onTabChange('blueprints')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'blueprints'
-                ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
-                : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-zinc-800'
+              ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
+              : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-zinc-800'
               }`}
           >
             <Icons.Dashboard size={20} />
@@ -44,12 +44,22 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
           <button
             onClick={() => onTabChange('schedules')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'schedules'
-                ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
-                : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-zinc-800'
+              ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
+              : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-zinc-800'
               }`}
           >
             <Icons.Schedule size={20} />
             Schedules
+          </button>
+          <button
+            onClick={() => onTabChange('runs')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'runs'
+              ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
+              : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-zinc-800'
+              }`}
+          >
+            <Icons.Clock size={20} />
+            Runs
           </button>
         </nav>
 

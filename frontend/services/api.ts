@@ -1,15 +1,14 @@
-import { Blueprint, SchedulerState } from '../types';
+import { Blueprint, RunItem, SchedulerState } from '../types';
 
 
 export const api = {
-  // --- Blueprint Operations ---
+  // --- Blueprint Operations --- //
 
   getBlueprints: async (): Promise<Blueprint[]> => {
     const res = await fetch(`http://localhost:8000/blueprints/all`);
     if (!res.ok) throw new Error("Failed to fetch blueprints");
     return res.json();
   },
-
 
   createBlueprint: async (blueprint: Omit<Blueprint, 'id'>): Promise<Blueprint> => {
     const newBlueprint = { ...blueprint, id: Date.now().toString() };
@@ -45,7 +44,7 @@ export const api = {
     return res.json();
   },
 
-  // --- Scheduler Operations ---
+  // --- Scheduler Operations --- //
 
   getSchedules: async (): Promise<string[]> => {
     const res = await fetch(`http://localhost:8000/scheduler/all`);
@@ -54,7 +53,7 @@ export const api = {
   },
 
   getSchedulerState: async (): Promise<SchedulerState> => {
-    const res = await fetch(`http://localhost:8000/health`);
+    const res = await fetch(`http://localhost:8000/scheduler/state`);
     if (!res.ok) throw new Error("Failed to fetch blueprints");
     return (res.json() as unknown as SchedulerState);
   },
@@ -67,5 +66,13 @@ export const api = {
     });
     const newstate = await api.getSchedulerState();
     return newstate;
+  },
+
+  // --- Reports Operations --- //
+
+  getRuns: async (): Promise<RunItem[]> => {
+    const res = await fetch(`http://localhost:8000/reports/all`);
+    if (!res.ok) throw new Error("Failed to fetch reports");
+    return res.json() as unknown as RunItem[];
   }
 };
