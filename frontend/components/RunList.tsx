@@ -7,84 +7,9 @@ interface RunListProps {
     runs: RunItem[];
 }
 
-// Helper to parse the raw cron string into a readable format
-
-const parseTrigger = (triggerStr: string) => {
-    if (!triggerStr) return "Unknown Schedule";
-
-    const getVal = (key: string) => {
-        const match = triggerStr.match(new RegExp(`${key}='([^']*)'`));
-        return match ? match[1] : null;
-    };
-
-    const dayOfWeek = getVal('day_of_week');
-    const day = getVal('day');
-    const month = getVal('month');
-    const hour = getVal('hour') || '0';
-    const minute = getVal('minute') || '0';
-
-    const formatTime = (hStr: string, mStr: string) => {
-        const hours = hStr.split(',').map(h => h.trim().padStart(2, '0'));
-        const mins = mStr.split(',').map(m => m.trim().padStart(2, '0'));
-
-        // If simplified single time
-        if (hours.length === 1 && mins.length === 1) {
-            return `${hours[0]}:${mins[0]}`;
-        }
-
-        // If small number of combinations, list them
-        if (hours.length * mins.length <= 4) {
-            const times: string[] = [];
-            hours.forEach(h => mins.forEach(m => times.push(`${h}:${m}`)));
-            return times.join(', ');
-        }
-
-        // Otherwise shorthand
-        return `${hours.join(',')}h ${mins.join(',')}m`;
-    };
-
-    const time = formatTime(hour, minute);
-
-    // Weekly logic
-    if (dayOfWeek && dayOfWeek !== '*') {
-        const daysMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        const days = dayOfWeek.split(',').map(d => {
-            const i = parseInt(d);
-            return isNaN(i) ? d : (daysMap[i] || d);
-        }).join(', ');
-
-        return `Weekly on ${days} at ${time}`;
-    }
-
-    // Monthly logic
-    if (day && day !== '*') {
-        const monthMap = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        let mStr = 'Monthly';
-        if (month && month !== '*') {
-            mStr = month.split(',').map(m => {
-                const i = parseInt(m);
-                return isNaN(i) ? m : (monthMap[i] || m);
-            }).join(', ');
-        }
-
-        return `${mStr} on the ${day} at ${time}`;
-    }
-
-    // Daily / Catch-all
-    if (dayOfWeek === '*' && (day === undefined || day === '*')) {
-        return `Daily at ${time}`;
-    }
-
-    return triggerStr.replace('trigger: ', '').replace('cron[', '').replace(']', '');
-};
-
-const onToggleScheduler = () => {
-    return
-}
-
 export const RunsList: React.FC<RunListProps> = ({ runs }) => {
-    const lastrun = runs[0]
-    const schedulerState = "on"
+    const rruns = [...runs].reverse()
+    const lastrun = rruns[0]
     return (
         <div className="max-w-4xl mx-auto space-y-6">
 
@@ -115,7 +40,7 @@ export const RunsList: React.FC<RunListProps> = ({ runs }) => {
                         </p>
                     </div>
                 ) : (
-                    runs.map((runitem: RunItem, idx) => {
+                    rruns.map((runitem: RunItem, idx) => {
 
                         return (
                             <div
