@@ -8,8 +8,7 @@ interface RunListProps {
 }
 
 export const RunsList: React.FC<RunListProps> = ({ runs }) => {
-    const rruns = [...runs].reverse()
-    const lastrun = rruns[0]
+    const lastrun = runs.at(0)
     return (
         <div className="max-w-4xl mx-auto space-y-6">
 
@@ -40,7 +39,7 @@ export const RunsList: React.FC<RunListProps> = ({ runs }) => {
                         </p>
                     </div>
                 ) : (
-                    rruns.map((runitem: RunItem, idx) => {
+                    runs.map((runitem: RunItem, idx) => {
 
                         return (
                             <div

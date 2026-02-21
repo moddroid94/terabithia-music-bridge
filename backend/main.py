@@ -114,10 +114,10 @@ def fetch(playlistName):
         time.sleep(4)
         # API returns a list of TrackItemSlot from a prompt
         trackSlotList = audioApi.api.search_track(f"{i.title} {i.artist}")
-
+        match = False
         for trackSlot in trackSlotList:
             time.sleep(4)
-            match = False
+
             # append only if name + artist is in the track infos
             runlogger.info(
                 "\nChecking Item: Title: %s Artist: %s\nWith: Title: %s Artist: %s Feat: %s\n",
@@ -571,6 +571,10 @@ def get_reports() -> list[RunItem]:
                 logger.error("Key Not Found %s", e, exc_info=True)
                 raise HTTPException(444, "Report Validaiton error, check Logs") from e
 
+    RunItems.sort(
+        key=lambda x: datetime.datetime.strptime(x.runnedAt[:19], "%Y-%m-%d %H:%M:%S"),
+        reverse=True,
+    )
     return RunItems
 
 

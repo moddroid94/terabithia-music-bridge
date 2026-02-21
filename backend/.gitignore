@@ -15,7 +15,7 @@ config.json
 .venv
 
 #downloaded files
-tracks/
+blueprints/
 output/music/
 output/playlists/
 output/reports/
