@@ -18,6 +18,7 @@ config.json
 tracks/
 output/music/
 output/playlists/
+output/reports/
 
 logs/*
 data/*
