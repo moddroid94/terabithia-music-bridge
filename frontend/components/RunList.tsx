@@ -1,13 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, Badge } from './ui/Common';
 import { Icons } from './ui/Icons';
 import { RunItem } from '../types';
+import { ReportInfo } from './ReportInfo';
+
+
 
 interface RunListProps {
     runs: RunItem[];
 }
 
 export const RunsList: React.FC<RunListProps> = ({ runs }) => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedReport, setSelectedReport] = useState<RunItem | null>(null);
+    const selectReport = (report) => {
+        setSelectedReport(report)
+        setIsModalOpen(true)
+    }
     const lastrun = runs.at(0)
     return (
         <div className="max-w-4xl mx-auto space-y-6">
@@ -43,8 +52,9 @@ export const RunsList: React.FC<RunListProps> = ({ runs }) => {
 
                         return (
                             <div
+                                onClick={() => selectReport(runitem)}
                                 key={runitem.name + runitem.runnedAt}
-                                className="group flex flex-col sm:flex-row sm:items-center p-5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg shadow-sm hover:border-primary-300 dark:hover:border-primary-800 transition-colors"
+                                className="group flex flex-col sm:flex-row sm:items-center p-5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg shadow-sm hover:border-primary-300 dark:hover:border-primary-800 transition-colors cursor-pointer"
                             >
                                 <div className="flex items-center flex-1">
                                     <div className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 mr-4 shrink-0">
@@ -52,10 +62,10 @@ export const RunsList: React.FC<RunListProps> = ({ runs }) => {
                                     </div>
                                     <div className="min-w-0">
                                         <h4 className="text-base text-gray-900 dark:text-white truncate">
-                                            <b>Name:</b> {runitem.name}
+                                            {runitem.name}
                                         </h4>
                                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 break-all line-clamp-2">
-                                            <b>With prompt:</b> {runitem.blueprint.prompt}
+                                            Prompt: {runitem.blueprint.prompt} • Tracks: {runitem.tracklist.length}
                                         </p>
                                     </div>
                                 </div>
@@ -69,6 +79,13 @@ export const RunsList: React.FC<RunListProps> = ({ runs }) => {
                             </div>
                         );
                     })
+                )}
+
+                {isModalOpen && (
+                    <ReportInfo
+                        reportItem={selectedReport}
+                        onCancel={() => setIsModalOpen(false)}
+                    />
                 )}
             </div>
         </div>
