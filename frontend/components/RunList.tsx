@@ -92,29 +92,13 @@ export const RunsList: React.FC<RunListProps> = ({ runs }) => {
             <Card className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-white dark:from-zinc-900 dark:to-zinc-800 border-l-4 border-l-primary-500">
                 <div>
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        Scheduler Status
-                        <Badge variant={isRunning ? 'success' : 'warning'}>
-                            {schedulerState}
-                        </Badge>
+                        Runs Statistic
                     </h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {isRunning
-                            ? "The scheduler is actively processing your enabled blueprints."
-                            : "Scheduler is paused. No playlists will be generated."}
+                        Job Runned: {runs.length} <br></br> Last Run: {runs[0].runnedAt.slice(0, 19)}
                     </p>
                 </div>
-                <button
-                    onClick={onToggleScheduler}
-                    className={`relative inline-flex h-12 w-20 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${isRunning ? 'bg-primary-600' : 'bg-gray-200 dark:bg-zinc-700'
-                        }`}
-                >
-                    <span
-                        className={`inline-block h-10 w-10 transform rounded-full bg-white shadow transition duration-300 ease-in-out ${isRunning ? 'translate-x-9' : 'translate-x-1'
-                            } flex items-center justify-center`}
-                    >
-                        {isRunning ? <Icons.Play size={20} className="text-primary-600" /> : <Icons.Pause size={20} className="text-gray-400" />}
-                    </span>
-                </button>
+
             </Card>
 
             {/* Schedule Items */}
@@ -127,14 +111,11 @@ export const RunsList: React.FC<RunListProps> = ({ runs }) => {
                     <div className="text-center py-12 bg-white dark:bg-zinc-900/50 rounded-xl border border-dashed border-gray-300 dark:border-zinc-700">
                         <Icons.Schedule size={32} className="mx-auto text-gray-400 mb-3" />
                         <p className="text-gray-500 dark:text-gray-400">
-                            {isRunning
-                                ? "No active schedules. Enable some blueprints to see them here."
-                                : "Scheduler is paused. Resume to see upcoming jobs."}
+                            No Jobs completed.
                         </p>
                     </div>
                 ) : (
                     runs.map((runitem: RunItem, idx) => {
-                        // Raw: "Releases Radar (trigger: cron[day_of_week='*', hour='*', minute='10'], next run at: 2026-02-16 23:10:00 CET)"
 
                         return (
                             <div
@@ -146,19 +127,19 @@ export const RunsList: React.FC<RunListProps> = ({ runs }) => {
                                         <Icons.Music size={20} />
                                     </div>
                                     <div className="min-w-0">
-                                        <h4 className="text-base font-semibold text-gray-900 dark:text-white truncate">
-                                            {runitem.name}
+                                        <h4 className="text-base text-gray-900 dark:text-white truncate">
+                                            <b>Name:</b> {runitem.name}
                                         </h4>
                                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 break-all line-clamp-2">
-                                            "none"
+                                            <b>With prompt:</b> {runitem.blueprint.prompt}
                                         </p>
                                     </div>
                                 </div>
 
                                 <div className="mt-4 sm:mt-0 sm:pl-6 sm:text-right border-t sm:border-t-0 sm:border-l border-gray-100 dark:border-zinc-800 pt-3 sm:pt-0 shrink-0">
-                                    <div className="text-xs text-gray-400 uppercase tracking-wide font-medium">Next Execution</div>
+                                    <div className="text-xs text-gray-400 uppercase tracking-wide font-medium">Executed At:</div>
                                     <div className="text-sm font-semibold text-primary-700 dark:text-primary-300 mt-1 font-mono">
-                                        None
+                                        {runitem.runnedAt.slice(0, 19)}
                                     </div>
                                 </div>
                             </div>

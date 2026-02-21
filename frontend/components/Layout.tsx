@@ -83,7 +83,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
           <p className="text-gray-500 dark:text-gray-400 mt-1">
             {activeTab === 'blueprints'
               ? 'Create and configure your playlist generation rules.'
-              : 'Monitor upcoming playlist generation jobs.'}
+              : ''}
+            {activeTab === 'schedules'
+              ? 'Monitor upcoming playlist generation jobs.'
+              : ''}
+            {activeTab === 'runs'
+              ? 'Visualize past generation jobs.'
+              : ''}
           </p>
         </header>
         <div className="px-6 pb-12">
