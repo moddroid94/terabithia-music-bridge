@@ -1,5 +1,6 @@
 from urllib.parse import urljoin
 import requests
+import time
 
 from utils.utils import json_from_base64
 from models.models import (
@@ -28,8 +29,10 @@ class AudioHifiAPI:
         self.api_urls = [
             "https://triton.squid.wtf",
             "https://vogel.qqdl.site",
+            "https://maus.qqdl.site",
             "https://tidal.kinoplus.online",
             "https://tidal-api.binimum.org",
+            "https://arran.monochrome.tf",
         ]
         self.search_path = "/search/"
         self.track_path = "/track/"
@@ -42,11 +45,10 @@ class AudioHifiAPI:
 
     def _make_request(self, path_url, params):
         for u in self.api_urls:
+            time.sleep(2)
             response = self.session.get(urljoin(u, path_url), params=params)
             if response.ok:
-                break
-        if response.ok:
-            return response.json()
+                return response.json()
         raise ConnectionError
 
     def search_track(self, prompt, mode="s") -> list[TrackItemSlot]:

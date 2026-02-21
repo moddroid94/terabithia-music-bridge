@@ -1,1 +1,1 @@
-{"id": "1771286642389", "name": "Weekly Discovery", "metaApi": "lbz", "audioApi": "hifi", "prompt": "artist:(noisia)", "enabled": true, "every": "weekly", "hour": "3", "minute": "25", "weekday": "*", "day": "1", "month": "*", "description": "weekly discovery", "mode": "easy"}
+{"id": "1771286642389", "name": "Weekly Discovery", "metaApi": "lbz", "audioApi": "hifi", "prompt": "artist:(noisia)", "enabled": true, "every": "weekly", "hour": "18", "minute": "52", "weekday": "*", "day": "1", "month": "*", "description": "weekly discovery", "mode": "easy"}

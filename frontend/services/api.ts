@@ -73,6 +73,6 @@ export const api = {
   getRuns: async (): Promise<RunItem[]> => {
     const res = await fetch(`http://localhost:8000/reports/all`);
     if (!res.ok) throw new Error("Failed to fetch reports");
-    return res.json() as unknown as RunItem[];
+    return (res.json());
   }
 };

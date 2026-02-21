@@ -129,8 +129,12 @@ def fetch(playlistName):
             )
             if match_candidate_to_track(i, trackSlot):
                 # get additional album info if matching
-                trackSlot.album = audioApi.api.get_album_info(trackSlot.album.id)
-                trackList.append(trackSlot)
+                try:
+                    trackSlot.album = audioApi.api.get_album_info(trackSlot.album.id)
+                    trackList.append(trackSlot)
+                except ConnectionError as e:
+                    runlogger.error("Error Getting album info %s", e)
+                    continue
                 runlogger.info(
                     "Matched: %s - %s\n", trackSlot.title, trackSlot.artist.name
                 )
@@ -243,11 +247,12 @@ def fetch(playlistName):
 jbs_name = "jbs_name"
 schedule_store_path = path.abspath("data/schedule.json")
 job_defaults_config = {"coalesce": True}
-executors = {"default": {"type": "threadpool", "max_workers": 1}}
+executors_default = {"default": {"type": "threadpool", "max_workers": 1}}
 jobstore_config = {"jbs_name": SQLAlchemyJobStore(url="sqlite:///data/schedule.sqlite")}
 scheduler = BackgroundScheduler(
     job_defaults=job_defaults_config,
     jobstores=jobstore_config,
+    executors=executors_default,
     logger=schedlogger,
 )
 scheduler.start()

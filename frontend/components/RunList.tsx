@@ -83,7 +83,7 @@ const onToggleScheduler = () => {
 }
 
 export const RunsList: React.FC<RunListProps> = ({ runs }) => {
-    const isRunning = true
+    const lastrun = runs[0]
     const schedulerState = "on"
     return (
         <div className="max-w-4xl mx-auto space-y-6">
@@ -95,7 +95,7 @@ export const RunsList: React.FC<RunListProps> = ({ runs }) => {
                         Runs Statistic
                     </h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Job Runned: {runs.length} <br></br> Last Run: {runs[0].runnedAt.slice(0, 19)}
+                        Job Runned: {runs.length} <br></br> Last Run: {lastrun?.runnedAt.slice(0, 19)}
                     </p>
                 </div>
 
