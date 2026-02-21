@@ -19,9 +19,9 @@ The functioning features as of now are:
     - Radio suggestions from track, album, artist or genres
 - FLAC Audio Downloads from multiple hifi API source
 - Tagging with artwork from hifi API metadata source
-- Playlist generation
+- Custom playlist generation
 - Persistent jobs schedule with sqlite
-- Health check endpoint with scheduler state
+- Health check endpoint for scheduler state
 - WebUI scheduling and managment interface
 
 In Development:
@@ -38,14 +38,15 @@ In Development:
 
 ## ✨ Features (WIP)
 
-- 🧠 **Smart Discovery**: Get recommendations based on multiple API sources and custom prompts.
-- ⚙️ **Multi Playlist Generation**: Generates multiple playlists based on the prompt and parameters. 
-- 🕹️ **Pluggable API**: Common interfaces allows to add APIs with ease (for devs).
+- 🧠 **Smart Discovery**: Get recommendations based on multiple API sources and prompts.
 - 🔍 **Automated Matching**: Searches and matches tracks across Audio API sources.
-- 💾 **Seamless FLAC Downloader**: Downloads FLAC files and organizes them into your library's folder structure.
+- 💾 **Seamless FLAC Downloader**: Downloads FLAC files and organizes them into folders.
 - 🏷️ **Clean Tagging**: Automatically applies Vorbis tags from the audio source to keep track consistency and your library accurate.
 - 🎼 **Playlist Generation**: Creates standard relative `.m3u8` files for instant import into Navidrome or any other player.
+- ⏲️ **Persistent Fault Tolerant Scheduler**: Schedule based on cron or simple intervals, automatically coalesce missed runs, store on SQlite DB.
+- 🪵 **Exhaustive logs**: We love nature, logs are thread specific and level can be set easily from config, No tree harmed.
 - 🛠️ **System Agnostic**: Works on any filesystem; if your player can read a folder, it can use Terabithia.
+- 🕹️ **Pluggable API**: Common interfaces allows to add source APIs with ease (for devs).
 
 <br>
 
@@ -53,7 +54,7 @@ In Development:
 
 ![home page][home]
 ![schedules][sched]
-
+![reports][runs]
 <br>
 
 ## ⚙️ How it Works
@@ -66,6 +67,16 @@ Terabithia acts as a bridge betweem your self-hosted music ecosystem and online 
 4.  **Organization**: Tracks are tagged and moved to `Artist/Album/Track.ext`.
 5.  **Integration**: A m3u8 playlist file is generated at the root folder level, with relative file paths, ready for your server or player to scan.
 
+### Some of the tools used in this app:
+- mutagen
+- hifiaudioapi (API Only)
+- music-tag (artwork write only)
+- APScheduler
+- custom fork of liblistenbrainz
+- FastAPI
+- Vite
+- sqlalchemy
+- musicbrainzngs
 ---
 
 ## 🚀 Installation
@@ -140,5 +151,6 @@ Distributed under the MIT License. See `LICENSE.md` for more information.
   Built with ❤️ for the self-hosted community.
 </p>
 
-[sched]: images/image-1.png
 [home]: images/image.png
+[sched]: images/image-1.png
+[runs]: images/image-2.png
