@@ -8,9 +8,9 @@ services:
     ports:
       - "${API_PORT}:8000"
     volumes:
-      - ${PATH_DT}:/data
-      - ${PATH_OT}:/output
-      - ${PATH_BP}:/blueprints
+      - ${PATH_DT}:/app/data
+      - ${PATH_OT}:/app/output
+      - ${PATH_BP}:/app/blueprints
     restart: always
   frontend:
     build:
