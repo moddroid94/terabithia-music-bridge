@@ -1,0 +1,29 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    pull_policy: build
+    environment:
+      - WEBUI_URL=${BASE_URL}:${WWW_PORT}
+    ports:
+      - "${API_PORT}:8000"
+    volumes:
+      - ./backend/uploads:/app/data
+      - ./backend/data:/app/output
+      - ./backend/blueprints:/app/blueprints
+    restart: always
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - VITE_APP_API=${BASE_URL}:${API_PORT}
+    pull_policy: build
+    volumes:
+      - node_modules:/app/node_modules
+    ports:
+      - "${WWW_PORT}:3000"
+    depends_on:
+      - backend
+    restart: always
+volumes:
+  node_modules:

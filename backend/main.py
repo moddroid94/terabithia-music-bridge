@@ -9,6 +9,7 @@ import datetime
 import os
 import json
 from os import path, makedirs, walk
+from pathlib import Path
 import logging
 from contextlib import asynccontextmanager
 
@@ -27,6 +28,10 @@ from api.linkapi import MetaLinkApi, AudioLinkApi
 from utils.utils import match_candidate_to_track, generate_report
 
 # Load configuration
+
+WEBUI_URL = os.getenv("WEBUI_URL", "http://localhost:8989")
+
+
 with open("config.json", "rb") as conf:
     config = json.loads(conf.read())
 
@@ -34,13 +39,13 @@ with open("config.json", "rb") as conf:
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 # Main Logger
 logger = logging.getLogger("Terabithia")
-mfh = logging.FileHandler(f"logs/main-{int(time.time())}.log")
+mfh = logging.FileHandler(f"data/logs/main-{int(time.time())}.log")
 logger.setLevel(config["logLevel"])
 mfh.setFormatter(formatter)
 logger.addHandler(mfh)
 # Scheduler Log
 schedlogger = logging.getLogger("APScheduler")
-fh = logging.FileHandler(f"logs/scheduler-{int(time.time())}.log")
+fh = logging.FileHandler(f"data/logs/scheduler-{int(time.time())}.log")
 schedlogger.setLevel(config["logLevel"])
 fh.setFormatter(formatter)
 schedlogger.addHandler(fh)
@@ -53,7 +58,7 @@ runlogger.setLevel(config["logLevel"])
 
 
 def build_logger(playlist):
-    rfh = logging.FileHandler(f"logs/run-{playlist}-{int(time.time())}.log")
+    rfh = logging.FileHandler(f"data/logs/run-{playlist}-{int(time.time())}.log")
     rfh.setFormatter(formatter)
     runlogger.addHandler(rfh)
     run_handlers.append(rfh)
@@ -268,7 +273,7 @@ async def lifespan(app: FastAPI):
     logger.info("Scheduler shutdown")
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, title="Terabithia API")
 origins = [
     "http://192.168.178.54:4545",
 ]
