@@ -12,7 +12,6 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       'process.env.API_URL': JSON.stringify(env.API_URL),
-      'process.env.API_PORT': JSON.stringify(env.GEMINI_API_PORT)
     },
     resolve: {
       alias: {
