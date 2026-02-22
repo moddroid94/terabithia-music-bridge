@@ -9,7 +9,7 @@ wheels/
 .mypy_cache
 
 # config files
-config.json
+data/config.json
 
 # Virtual environments
 .venv

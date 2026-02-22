@@ -32,7 +32,7 @@ from utils.utils import match_candidate_to_track, generate_report
 WEBUI_URL = os.getenv("WEBUI_URL", "http://localhost:8989")
 
 
-with open("config.json", "rb") as conf:
+with open("data/config.json", "rb") as conf:
     config = json.loads(conf.read())
 
 # Setup logging
