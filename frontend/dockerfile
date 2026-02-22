@@ -1,16 +1,16 @@
 # use the official Bun image
 # see all versions at https://hub.docker.com/r/oven/bun/tags
 FROM oven/bun:1 AS base
-WORKDIR /app
+WORKDIR /
 # Set env variable
 ARG VITE_APP_API
 ENV VITE_APP_API=$VITE_APP_API
 
 COPY package.json bun.lock .
-RUN bun install --frozen-lockfile --production
-
+RUN bun install
 
 COPY . . 
+
 RUN bun run build
 
 EXPOSE 3000/tcp
