@@ -31,10 +31,12 @@ from utils.utils import match_candidate_to_track, generate_report
 
 WEBUI_URL = os.getenv("WEBUI_URL", "http://localhost:8989")
 
-
-with open("data/config.json", "rb") as conf:
-    config = json.loads(conf.read())
-
+try:
+    with open("data/config.json", "rb") as conf:
+        config = json.loads(conf.read())
+except OSError:
+    with open("data/config.example", "rb") as conf:
+        config = json.loads(conf.read())
 # Setup logging
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 # Main Logger
