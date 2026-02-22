@@ -21,4 +21,5 @@ output/playlists/
 output/reports/
 
 logs/*
-data/*
+data/config.json
+data/schedule.sqlite
