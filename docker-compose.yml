@@ -8,9 +8,9 @@ services:
     ports:
       - "${API_PORT}:8000"
     volumes:
-      - ./tera/data:/data
-      - ./tera/output:/output
-      - ./tera/blueprints:/blueprints
+      - ${PATH}/data:/data
+      - ${PATH}/output:/output
+      - ${PATH}/blueprints:/blueprints
     restart: always
   frontend:
     build:
