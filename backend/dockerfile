@@ -1,8 +1,8 @@
 FROM python:3.12-slim
-WORKDIR /
-COPY data/config.example ./data/config.json
+WORKDIR /app
+COPY data/config.example app/data/config.json
 RUN pip install --no-cache-dir uv && \
-    uv install
+    uv sync
 COPY . .
 EXPOSE 8000
 CMD ["uv", "run", "fastapi", "run", "main.py"]
