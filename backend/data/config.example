@@ -1,0 +1,6 @@
+{
+    "user": "your_listenbrainz_username(optional)",
+    "token": "your_listenbrainz_token",
+    "logLevel": "WARNING",
+    "interval": 1000
+}
