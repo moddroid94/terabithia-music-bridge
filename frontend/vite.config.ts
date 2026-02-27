@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react()],
     define: {
-      'process.env.API_URL': JSON.stringify(env.API_URL),
+      "import.meta.env.VITE_APP_API": JSON.stringify(env.API_URL),
     },
     resolve: {
       alias: {

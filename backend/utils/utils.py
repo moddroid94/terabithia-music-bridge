@@ -2,7 +2,7 @@ import json
 import base64
 from os import path, walk
 
-from core.tagger import get_flac_info
+from core.tagger import get_flac_info, get_mp3_info
 
 
 def json_from_base64(base64_bytes):
@@ -69,8 +69,14 @@ def generate_report(playlistName, runnedAt, blueprint, logger, error_callback):
     for f in filelist:
         logger.info("reading %s", f)
         rel_path = f"output/{f}"
+        ext = f.split(".")[-1]
         full_path = path.abspath(rel_path)
-        data = get_flac_info(full_path)
+        data = None
+        if ext == "flac":
+            data = get_flac_info(full_path)
+        if ext == "mp3":
+            data = get_mp3_info(full_path)
+
         tracklist.append(data)
 
     if len(tracklist) < 1:

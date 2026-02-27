@@ -9,13 +9,12 @@ wheels/
 .mypy_cache
 
 # config files
-data/config.json
-
+backend/data/config.json
+backend/data/schedule.sqlite
 # Virtual environments
 .venv
 
 #downloaded files
 tracks/
 
-logs/*
-data/*
+backend/data/logs/*

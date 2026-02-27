@@ -19,6 +19,8 @@ class TrackItemSlot:
         explicit=None,
         audioQuality=None,
         artists=None,
+        thumbnail=None,
+        trackinfoslot=None,
     ):
         self.id = id
         self.title = title
@@ -35,6 +37,8 @@ class TrackItemSlot:
         self.artist: ArtistSubSlot = artist
         self.artists: dict[ArtistSubSlot] = artists
         self.album: AlbumSubSlot | AlbumItemSlot = album
+        self.thumbnail = thumbnail
+        self.trackinfoslot = trackinfoslot
 
 
 class AlbumItemSlot:
@@ -77,13 +81,13 @@ class TrackInfoSlot:
     def __init__(
         self,
         trackId,
-        trackReplayGain,
-        albumReplayGain,
-        bitDepth,
-        sampleRate,
-        manifest,
-        url="",
-        codec="",
+        url,
+        codec,
+        trackReplayGain="",
+        albumReplayGain="",
+        bitDepth="",
+        sampleRate="",
+        manifest="",
     ):
         self.trackId = trackId
         self.trackReplayGain = trackReplayGain

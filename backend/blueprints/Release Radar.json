@@ -1,1 +1,1 @@
-{"id": "1771283202892", "name": "Release Radar", "metaApi": "lbz", "audioApi": "hifi", "prompt": "tag:(drum and bass)", "enabled": true, "every": "weekly", "hour": "18", "minute": "51", "weekday": "*", "day": "1", "month": "*", "description": "Weekly discovery", "mode": "medium"}
+{"id": "1771283202892", "name": "Release Radar", "metaApi": "lbz", "audioApi": "hifi", "prompt": "tag:(drum and bass)", "enabled": true, "every": "weekly", "hour": "18", "minute": "51", "weekday": "*", "day": "1", "month": "*", "description": "Weekly discovery", "mode": "medium", "quantity": 20}

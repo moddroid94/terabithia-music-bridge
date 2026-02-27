@@ -7,11 +7,13 @@ Main fastAPI module for Terabithia
 import time
 import datetime
 import os
+import re
 import json
 from os import path, makedirs, walk
 from pathlib import Path
 import logging
 from contextlib import asynccontextmanager
+
 
 from fastapi import HTTPException, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -81,33 +83,7 @@ def job_callback(event):
         runlogger.removeHandler(h)
 
 
-def fetch(playlistName):
-    build_logger(playlistName)
-    runlogger.info("Running Job %s", playlistName)
-    blueprints = []
-    playlist = None
-    trackList: list[TrackItemSlot] = []
-    # pylint: disable-next=unused-variable
-    for dirpath, dirnames, filenames in walk(
-        path.abspath("blueprints"),
-        onerror=error_callback,
-    ):
-        runlogger.debug("Scanning %s", dirpath)
-        for file in filenames:
-            blueprints.append(path.join(dirpath, file))
-            runlogger.debug("Found Blueprint %s", file)
-        break  # return only root bp folder
-
-    for p in blueprints:
-        with open(p, "rb") as item:
-            playlistEntry = json.loads(item.read())
-            if playlistEntry["name"] == playlistName:
-                playlist = playlistEntry
-                break
-    if playlist is None:
-        runlogger.error("No Playlist Found for %s", playlistName)
-        return HTTPException(447, "No Playlist Found")
-
+def fetchhifi(playlist):
     runlogger.info("Building playlist: %s", playlist["name"])
 
     metaApi = MetaLinkApi(playlist["metaApi"], config["token"])
@@ -248,6 +224,87 @@ def fetch(playlistName):
         blueprint=playlist,
         alogger=runlogger,
     )
+
+
+def fetchscl(playlist):
+    runlogger.info("Building playlist: %s", playlist["name"])
+    # setting global path, the rest of the path is build by yt_dlp
+    dirPath = path.abspath("output/music")
+
+    audioApi = AudioLinkApi(playlist["audioApi"], path=dirPath)
+    # yt_dlp takes care of embedding metadata and thumbnail, as well as downloading to the set path
+    # return the list of tracks to pass to the playlist builder
+    trackList = audioApi.api.get_info_url(url=playlist["prompt"], logger=runlogger)
+    # get track files from queue list and
+    # builds playlist appending tracks to the m3u
+    m3u = []
+    m3u.append("#EXTM3U")
+    m3u.append(f"#{playlist['name']}")
+
+    for idx, t in enumerate(trackList, start=1):
+        safe_filename = re.sub(r"[\\/*?:\"<>|]", "-", t.title)
+        safe_artist = re.sub(r"[\\/*?:\"<>|]", "-", t.artist.name)
+        safe_album = re.sub(r"[\\/*?:\"<>|]", "-", t.album.title)
+        relfilepath = f"/{safe_artist}/{safe_album}/{safe_filename}"  # not adding extension to allow yt-dlp to add it's own
+        audioApi.api.let_download_url(
+            playlist["prompt"], runlogger, relfilepath, idx
+        )  # keeping main playlist url to keep metadata
+        try:
+            m3u.append(f"../music{relfilepath}.{t.trackinfoslot.codecs}")
+        except Exception as e:
+            runlogger.error(
+                "ERROR: Error: %s",
+                e,
+                exc_info=True,
+            )
+
+    # write m3u8 playlist file to disk
+    with open(
+        f"output/playlists/{playlist['name']}.m3u8",
+        encoding="utf-8",
+        mode="w",
+    ) as file:
+        for line in m3u:
+            file.write(line + "\n")
+    runlogger.info("Playlist %s downloaded - Generating Report..", playlist["name"])
+    make_report(
+        playlistName=playlist["name"],
+        runnedAt=str(datetime.datetime.now()),
+        blueprint=playlist,
+        alogger=runlogger,
+    )
+
+
+def fetch(playlistName):
+    build_logger(playlistName)
+    runlogger.info("Running Job %s", playlistName)
+    blueprints = []
+    playlist = None
+    # pylint: disable-next=unused-variable
+    for dirpath, dirnames, filenames in walk(
+        path.abspath("blueprints"),
+        onerror=error_callback,
+    ):
+        runlogger.debug("Scanning %s", dirpath)
+        for file in filenames:
+            blueprints.append(path.join(dirpath, file))
+            runlogger.debug("Found Blueprint %s", file)
+        break  # return only root bp folder
+
+    for p in blueprints:
+        with open(p, "rb") as item:
+            playlistEntry = json.loads(item.read())
+            if playlistEntry["name"] == playlistName:
+                playlist = playlistEntry
+                break
+    if playlist is None:
+        runlogger.error("No Playlist Found for %s", playlistName)
+        return HTTPException(447, "No Playlist Found")
+
+    if playlist["audioApi"] == "scl":
+        fetchscl(playlist)
+    if playlist["audioApi"] == "hifi":
+        fetchhifi(playlist)
 
 
 # Initialize scheduler

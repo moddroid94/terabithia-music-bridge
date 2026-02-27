@@ -1,3 +1,14 @@
+// Vite environment variables type declaration
+declare global {
+  interface ImportMetaEnv {
+    readonly VITE_APP_API: string;
+  }
+
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+  }
+}
+
 export interface Blueprint {
   id: string; // Internal ID for frontend management
   name: string;

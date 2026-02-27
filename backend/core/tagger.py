@@ -5,6 +5,7 @@ import base64
 
 import music_tag
 from mutagen.flac import FLAC
+import mutagen
 
 from models.models import TrackItemSlot
 
@@ -46,6 +47,43 @@ def add_cover(FilePath, artworkBytes):
     track.save()
 
 
+def get_mp3_info(filePath):
+    trackTags = {
+        "title": [],
+        "album": [],
+        "albumartist": [],
+        "date": [],
+        "genre": [],
+        "artist": [],
+        "artists": [],
+        "tracknumber": [],
+        "discnumber": [],
+        "tracktotal": [],
+        "disctotal": [],
+    }
+    track = mutagen.File(filePath)
+    for i, v in track.tags.items():
+        match i:
+            case "TIT2":
+                trackTags["title"] = v.text
+            case "TALB":
+                trackTags["album"] = v.text
+            case "TRCK":
+                trackTags["tracknumber"] = v.text
+            case "TPE1":
+                trackTags["artist"] = v.text
+            case "TDRC":
+                trackTags["date"] = [str(v.text[0])]
+            case _:
+                pass
+
+    trackTags["LENGTH"] = track.info.length
+    trackTags["ARTWORK"] = base64.b64encode(
+        track.tags["APIC:Album cover"].data
+    ).decode()
+    return trackTags
+
+
 def get_flac_info(filePath):
     trackTags = {}
     track = FLAC(filePath)
@@ -54,6 +92,7 @@ def get_flac_info(filePath):
             trackTags[i] = list(v)
         except:  # noqa: E722 #pylint: disable=W0702
             pass
+
     trackTags["LENGTH"] = track.info.length
     artbytes = track.pictures[0].data
     trackTags["ARTWORK"] = base64.b64encode(artbytes).decode()
