@@ -544,6 +544,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "local-ffmpeg"
+version = "0.1.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+    { name = "tqdm" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/69/d7/77e0e1c14fc1d5249b213ca8985debc5f322f861195e46d6fc406d9b814d/local_ffmpeg-0.1.4.tar.gz", hash = "sha256:0404f748142475389aebbc5054b0cfa65ef147edb9b7ff1f2910f1afc4a92cb7", size = 31459, upload-time = "2025-03-15T19:35:03.195Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8e/e2/e4098322284dafdf882134f46aed238b158dad5ce2502827bece014ff498/local_ffmpeg-0.1.4-py3-none-any.whl", hash = "sha256:c18a0f90a4419a79d08910816e1b851605169818e99792f4f5ece7a99ac8957f", size = 12620, upload-time = "2025-03-15T19:35:01.991Z" },
+]
+
+[[package]]
 name = "markdown-it-py"
 version = "4.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1148,6 +1161,7 @@ dependencies = [
     { name = "apscheduler" },
     { name = "fastapi", extra = ["standard"] },
     { name = "liblistenbrainz" },
+    { name = "local-ffmpeg" },
     { name = "music-tag" },
     { name = "musicbrainzngs" },
     { name = "pillow" },
@@ -1160,11 +1174,24 @@ requires-dist = [
     { name = "apscheduler", specifier = ">=3.11.2" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.129.0" },
     { name = "liblistenbrainz", git = "https://github.com/moddroid94/liblistenbrainz" },
+    { name = "local-ffmpeg", specifier = ">=0.1.4" },
     { name = "music-tag", specifier = ">=0.4.3" },
     { name = "musicbrainzngs", specifier = ">=0.7.1" },
     { name = "pillow", specifier = ">=12.1.0" },
     { name = "sqlalchemy", specifier = ">=2.0.46" },
     { name = "yt-dlp", extras = ["default"], specifier = ">=2026.2.21" },
+]
+
+[[package]]
+name = "tqdm"
+version = "4.67.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/09/a9/6ba95a270c6f1fbcd8dac228323f2777d886cb206987444e4bce66338dd4/tqdm-4.67.3.tar.gz", hash = "sha256:7d825f03f89244ef73f1d4ce193cb1774a8179fd96f31d7e1dcde62092b960bb", size = 169598, upload-time = "2026-02-03T17:35:53.048Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/16/e1/3079a9ff9b8e11b846c6ac5c8b5bfb7ff225eee721825310c91b3b50304f/tqdm-4.67.3-py3-none-any.whl", hash = "sha256:ee1e4c0e59148062281c49d80b25b67771a127c85fc9676d3be5f243206826bf", size = 78374, upload-time = "2026-02-03T17:35:50.982Z" },
 ]
 
 [[package]]

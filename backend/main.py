@@ -28,6 +28,8 @@ from core import tagger
 from models.models import BlueprintSlot, BlueprintSlotUpdate, TrackItemSlot, RunItem
 from api.linkapi import MetaLinkApi, AudioLinkApi
 from utils.utils import match_candidate_to_track, generate_report
+from local_ffmpeg import is_installed, install
+
 
 # Load configuration
 
@@ -59,6 +61,17 @@ run_handlers = []
 
 runlogger = logging.getLogger("Runner")
 runlogger.setLevel(config["logLevel"])
+
+# Check if FFmpeg is already installed
+if not is_installed():
+    # Install FFmpeg if not found
+    success, message = install()
+    if success:
+        logger.info(message)  # FFmpeg installed successfully
+    else:
+        logger.error(message)
+else:
+    logger.info("ffmpeg already installed")
 
 
 def build_logger(playlist):

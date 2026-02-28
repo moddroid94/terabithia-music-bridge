@@ -8,6 +8,7 @@ dependencies = [
     "apscheduler>=3.11.2",
     "fastapi[standard]>=0.129.0",
     "liblistenbrainz",
+    "local-ffmpeg>=0.1.4",
     "music-tag>=0.4.3",
     "musicbrainzngs>=0.7.1",
     "pillow>=12.1.0",
