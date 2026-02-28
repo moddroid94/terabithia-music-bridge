@@ -104,6 +104,10 @@ class YtSclAPI:
         # key "_type" seems not accessible? getting keyError.
         if info.get("entries"):
             for responseItem in info["entries"]:
+                if responseItem["artists"] is not None:
+                    artistlist = responseItem["artists"]
+                else:
+                    artistlist = ["unknown"]
                 resultTracks.append(
                     TrackItemSlot(
                         id=responseItem["id"],
@@ -113,7 +117,7 @@ class YtSclAPI:
                             "original_url"
                         ],  # this is not the file url, but the page one, for yt-dlp
                         artist=_artist_subslot(responseItem.get("artist")),
-                        artists=[_artist_subslot(i) for i in responseItem["artists"]],
+                        artists=[_artist_subslot(i) for i in artistlist],
                         album=_album_subslot(self._get_album_subslot(responseItem)),
                         thumbnail=responseItem["thumbnail"],
                         trackinfoslot=self.get_track_manifest(responseItem),
@@ -121,6 +125,10 @@ class YtSclAPI:
                 )
         else:
             responseItem = info
+            if responseItem["artists"] is not None:
+                artistlist = responseItem["artists"]
+            else:
+                artistlist = ["unknown"]
             resultTracks.append(
                 TrackItemSlot(
                     id=responseItem["id"],
