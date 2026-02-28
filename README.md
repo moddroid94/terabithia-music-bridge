@@ -19,6 +19,7 @@ The functioning features as of now are:
     - Radio suggestions from track, album, artist or genres
 - FLAC Audio Downloads from multiple hifi API source
 - Tagging with artwork from hifi API metadata source
+- Track/Playlist download from soundcl0ud via yt-lp (meant for changing playlists on soundcloud and one-time track/album downloads)
 - Custom playlist generation
 - Persistent jobs schedule with sqlite
 - Health check endpoint for scheduler state
@@ -40,8 +41,8 @@ In Development:
 
 - 🧠 **Smart Discovery**: Get recommendations based on multiple API sources and prompts.
 - 🔍 **Automated Matching**: Searches and matches tracks across Audio API sources.
-- 💾 **Seamless FLAC Downloader**: Downloads FLAC files and organizes them into folders.
-- 🏷️ **Clean Tagging**: Automatically applies Vorbis tags from the audio source to keep track consistency and your library accurate.
+- 💾 **Seamless FLAC/MP3 Downloader**: Downloads FLAC/MP3 files and organizes them into folders.
+- 🏷️ **Clean Tagging**: Automatically applies tags from the audio source to keep track consistency and your library accurate.
 - 🎼 **Playlist Generation**: Creates standard relative `.m3u8` files for instant import into Navidrome or any other player.
 - ⏲️ **Persistent Fault Tolerant Scheduler**: Schedule based on cron or simple intervals, automatically coalesce missed runs, store on SQlite DB.
 - 🪵 **Exhaustive logs**: We love nature, logs are thread specific and level can be set easily from config, No tree harmed.
@@ -70,6 +71,7 @@ Terabithia acts as a bridge betweem your self-hosted music ecosystem and online 
 ### Some of the tools used in this app:
 - mutagen
 - hifiaudioapi (API Only)
+- yt-dlp (scl API)
 - music-tag (artwork write only)
 - APScheduler
 - custom fork of liblistenbrainz
@@ -124,8 +126,10 @@ bun run dev
 
 ---
 ## API Availability:
-  - AudioAPI: hifi
-  - MetaAPI: lbz (Listenbrainz)
+  - AudioAPI: hifi, scl*
+  - MetaAPI: lbz (Listenbrainz), scl*
+
+*only works when both sources api are set to scl
 
 ## 🤝 Contributing
 
