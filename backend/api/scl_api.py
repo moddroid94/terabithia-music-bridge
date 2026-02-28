@@ -64,7 +64,7 @@ class YtSclAPI:
                     duration=responseItem["duration"],
                     url=responseItem["url"],
                     artist=_artist_subslot(responseItem.get("artist")),
-                    artists=[_artist_subslot(i) for i in responseItem.get("artists")],
+                    artists=[_artist_subslot(i) for i in responseItem["artists"]],
                     album=_album_subslot(
                         responseItem["playlist"]
                         if responseItem["playlist"] is not None
@@ -113,9 +113,7 @@ class YtSclAPI:
                             "original_url"
                         ],  # this is not the file url, but the page one, for yt-dlp
                         artist=_artist_subslot(responseItem.get("artist")),
-                        artists=[
-                            _artist_subslot(i) for i in responseItem.get("artists")
-                        ],
+                        artists=[_artist_subslot(i) for i in responseItem["artists"]],
                         album=_album_subslot(self._get_album_subslot(responseItem)),
                         thumbnail=responseItem["thumbnail"],
                         trackinfoslot=self.get_track_manifest(responseItem),
@@ -130,7 +128,7 @@ class YtSclAPI:
                     duration=responseItem["duration"],
                     url=responseItem["url"],
                     artist=_artist_subslot(responseItem.get("artist")),
-                    artists=[_artist_subslot(i) for i in responseItem.get("artists")],
+                    artists=[_artist_subslot(i) for i in responseItem["artists"]],
                     album=_album_subslot(self._get_album_subslot(responseItem)),
                     thumbnail=responseItem["thumbnail"],
                     trackinfoslot=self.get_track_manifest(responseItem),
