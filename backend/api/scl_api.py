@@ -120,7 +120,7 @@ class YtSclAPI:
                         url=responseItem[
                             "original_url"
                         ],  # this is not the file url, but the page one, for yt-dlp
-                        artist=_artist_subslot(artistslot),
+                        artist=_artist_subslot(artistslot[0]),
                         artists=[_artist_subslot(i) for i in artistlist],
                         album=_album_subslot(self._get_album_subslot(responseItem)),
                         thumbnail=responseItem["thumbnail"],
@@ -143,7 +143,7 @@ class YtSclAPI:
                     title=responseItem["title"],
                     duration=responseItem["duration"],
                     url=responseItem["url"],
-                    artist=_artist_subslot(artistslot),
+                    artist=_artist_subslot(artistslot[0]),
                     artists=[_artist_subslot(i) for i in artistlist],
                     album=_album_subslot(self._get_album_subslot(responseItem)),
                     thumbnail=responseItem["thumbnail"],
