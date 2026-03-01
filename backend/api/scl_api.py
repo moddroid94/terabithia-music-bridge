@@ -108,6 +108,10 @@ class YtSclAPI:
                     artistlist = responseItem["artists"]
                 else:
                     artistlist = ["unknown"]
+                if responseItem.get("artist") is not None:
+                    artistslot = responseItem.get("artist")
+                else:
+                    artistslot = ["unknown"]
                 resultTracks.append(
                     TrackItemSlot(
                         id=responseItem["id"],
@@ -116,7 +120,7 @@ class YtSclAPI:
                         url=responseItem[
                             "original_url"
                         ],  # this is not the file url, but the page one, for yt-dlp
-                        artist=_artist_subslot(responseItem.get("artist")),
+                        artist=_artist_subslot(artistslot),
                         artists=[_artist_subslot(i) for i in artistlist],
                         album=_album_subslot(self._get_album_subslot(responseItem)),
                         thumbnail=responseItem["thumbnail"],
@@ -129,14 +133,18 @@ class YtSclAPI:
                 artistlist = responseItem["artists"]
             else:
                 artistlist = ["unknown"]
+            if responseItem.get("artist") is not None:
+                artistslot = responseItem.get("artist")
+            else:
+                artistslot = ["unknown"]
             resultTracks.append(
                 TrackItemSlot(
                     id=responseItem["id"],
                     title=responseItem["title"],
                     duration=responseItem["duration"],
                     url=responseItem["url"],
-                    artist=_artist_subslot(responseItem.get("artist")),
-                    artists=[_artist_subslot(i) for i in responseItem["artists"]],
+                    artist=_artist_subslot(artistslot),
+                    artists=[_artist_subslot(i) for i in artistlist],
                     album=_album_subslot(self._get_album_subslot(responseItem)),
                     thumbnail=responseItem["thumbnail"],
                     trackinfoslot=self.get_track_manifest(responseItem),
