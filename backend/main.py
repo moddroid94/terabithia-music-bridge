@@ -63,9 +63,9 @@ runlogger = logging.getLogger("Runner")
 runlogger.setLevel(config["logLevel"])
 
 # Check if FFmpeg is already installed
-if not is_installed():
+if not is_installed("/usr/local/bin/"):
     # Install FFmpeg if not found
-    success, message = install()
+    success, message = install("/usr/local/bin/")
     if success:
         logger.info(message)  # FFmpeg installed successfully
     else:
